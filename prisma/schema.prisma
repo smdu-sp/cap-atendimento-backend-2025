@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Permissao {
+  DEV
+  ADM
+  USR
+}
+
+model Usuario {
+  id            String    @id @default(uuid())
+  nome          String
+  login         String    @unique
+  email         String    @unique
+  permissao     Permissao @default(USR)
+  status        Int       @default(1)
+
+  ultimoLogin   DateTime @default(now())
+  criadoEm      DateTime @default(now())
+  atualizadoEm  DateTime @default(now()) @updatedAt
+
+  @@map("usuarios")
+}
+
+model Agendamento {
+  id              Int      @id @default(autoincrement()) 
+  motivo          String
+  municipe        String
+  rg              String
+  cpf             String
+  tecnico         String
+  coordenadoria   String
+  processo        String  
+  datainicio      DateTime  
+  datafim         DateTime
+
+  @@map("agendamentos")
+}
+
+model coordenadoria {
+  id            String   @id @default(uuid())
+  nome          String
+  sigla         String
+  status        Int       @default(1)
+
+  criadoEm      DateTime @default(now())
+  atualizadoEm  DateTime @default(now()) @updatedAt
+
+  @@map("coordenadorias")
+}
