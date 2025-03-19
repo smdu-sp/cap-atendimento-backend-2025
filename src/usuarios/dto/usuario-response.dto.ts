@@ -13,15 +13,15 @@ export class UsuarioResponseDTO {
     @ApiProperty()
     status: boolean
     @ApiProperty()
-    criado_em: Date
-    @ApiProperty()
-    alterado_em: Date
-    @ApiProperty()
     avatar: string
     @ApiProperty()
-    dev: boolean
+    permissao: Permissao
     @ApiProperty()
-    permissoes?: Permissao[]
+    ultimoLogin: Date
+    @ApiProperty()
+    criadoEm: Date
+    @ApiProperty()
+    atualizadoEm: Date
 }
 
 export class UsuarioPaginadoResponseDTO {

@@ -13,11 +13,13 @@ export class EuResponseDTO {
     @ApiProperty()
     status: boolean
     @ApiProperty()
-    criado_em: Date
+    ultimoLogin: Date
     @ApiProperty()
-    alterado_em: Date
+    criadoEm: Date
+    @ApiProperty()
+    atualizadoEm: Date
     @ApiProperty()
     avatar?: string;
     @ApiProperty()
-    dev: boolean
+    permissao: Permissao
 }

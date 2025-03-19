@@ -29,5 +29,9 @@ export class CreateUsuarioDto {
   permissao?: $Enums.Permissao;
 
   @IsNumber({}, { message: 'Status inválido!' })
-  status?: number;
+  status?: boolean;
+
+  @ApiProperty({ description: 'URL para Avatar de Usuário' })
+  @IsString({ message: 'Tem de ser texto.' })
+  avatar?: string;
 }

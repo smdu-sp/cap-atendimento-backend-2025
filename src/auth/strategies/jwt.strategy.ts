@@ -18,6 +18,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   async validate(payload: UsuarioPayload): Promise<Usuario> {
     const usuario = await this.usuariosService.buscarPorId(payload.sub);
     if (!usuario) throw new Error('Usuário não encontrado');
+    await this.usuariosService.atualizarUltimoLogin(payload.sub);
     return usuario;
   }
 }

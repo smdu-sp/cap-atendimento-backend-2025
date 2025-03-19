@@ -25,8 +25,8 @@ export class AuthService {
   }
 
   async getTokens(usuario: UsuarioJwt) {
-    const { id, login, nome, email, status, avatar, dev } = usuario;
-    const payload: UsuarioPayload = { sub: id, login, nome, email, status, avatar, dev };
+    const { id, login, nome, email, status, avatar, permissao } = usuario;
+    const payload: UsuarioPayload = { sub: id, login, nome, email, status, avatar, permissao };
     const access_token = await this.jwtService.signAsync(payload, {
       expiresIn: '15m',
       secret: process.env.JWT_SECRET,
@@ -40,6 +40,7 @@ export class AuthService {
 
   async validateUser(login: string, senha: string) {
     let usuario = await this.usuariosService.buscarPorLogin(login);
+    if (!usuario) throw new UnauthorizedException('Credenciais incorretas.');
     if (usuario && usuario.status === false)
       throw new UnauthorizedException('Usuário desativado.');
     if (process.env.ENVIRONMENT == 'local')
@@ -52,25 +53,6 @@ export class AuthService {
     } catch (error) {
       console.log(error);
       throw new UnauthorizedException('Credenciais incorretas.');
-    }
-    if (!usuario) {
-      const { searchEntries } = await client.search(
-        process.env.LDAP_BASE,
-        {
-          filter: `(&(samaccountname=${login}))`,
-          scope: 'sub',
-        }
-      );
-      const { name, mail } = searchEntries[0];
-      const novoUsuario = await this.usuariosService.criar({
-        nome: name as string,
-        login,
-        email: (mail as string).toLowerCase(),
-        status: false,
-      });
-      await client.unbind();
-      if (novoUsuario) throw new ForbiddenException('Usuário criado, aguardando aprovação.');
-      throw new InternalServerErrorException('Não foi possível fazer login no momento.');
     }
     await client.unbind();
     return usuario;

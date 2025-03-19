@@ -7,5 +7,5 @@ export interface UsuarioJwt {
   email: string;
   status: boolean;
   avatar?: string;
-  dev: boolean;
+  permissao: Permissao;
 }

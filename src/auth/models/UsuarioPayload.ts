@@ -7,7 +7,7 @@ export interface UsuarioPayload {
   nome: string;
   status: boolean;
   avatar?: string;
-  dev: boolean;
+  permissao: Permissao;
   iat?: number;
   exp?: number;
 }
