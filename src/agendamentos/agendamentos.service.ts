@@ -156,6 +156,7 @@ export class AgendamentosService {
     return {
       coordenadorias,
       motivos,
+      agendamentosMes: [{ label: "Março/2025", totalMes }],
       total: agendamentosFiltrados.length,
       totalAno,
       totalMes,
