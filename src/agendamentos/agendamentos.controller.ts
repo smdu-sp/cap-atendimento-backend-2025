@@ -40,12 +40,17 @@ export class AgendamentosController {
   async importarICS(@UploadedFile() arquivo: Express.Multer.File) {
     return await this.agendamentosService.importarICS(arquivo);
   }
-
+  
   @IsPublic()
-  @Get('buscar')
+  @Get('dashboard')
   @UseInterceptors(AgendamentosInterceptor)
-  async buscar(@Query('busca') busca: string) {
-    return await this.agendamentosService.buscar(busca);
+  async dashboard(
+    @Query('motivoId') motivoId?: string,
+    @Query('coordenadoriaId') coordenadoriaId?: string,
+    @Query('dataInicio') dataInicio?: string,
+    @Query('dataFim') dataFim?: string,
+  ) {
+    return await this.agendamentosService.dashboard(motivoId, coordenadoriaId, dataInicio, dataFim);
   }
 }
 

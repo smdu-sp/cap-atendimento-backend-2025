@@ -53,7 +53,8 @@ export class AgendamentosService {
     [pagina, limite] = this.app.verificaLimite(pagina, limite, total);
     const agendamentos: Agendamento[] = await this.prisma.agendamento.findMany({
       where: searchParams,
-      orderBy: { dataInicio: 'asc' },
+      include: { motivo: true, coordenadoria: true, tecnico: true },
+      orderBy: { dataInicio: 'desc' },
       skip: (pagina - 1) * limite,
       take: limite
     });
@@ -121,139 +122,68 @@ export class AgendamentosService {
     return result;
   }
 
-  async buscar(busca: string) {
-    // const agendamentos = await this.prisma.agendamento.findMany();
-    // const coordenadorias = await this.reduceCoordenadorias(agendamentos);
-    // const motivos = await this.reduceMotivos(agendamentos);
-    // return { coordenadorias, motivos };
-    const coordenadorias = await this.prisma.coordenadoria.findMany({
-      select: { sigla: true, agendamentos: true }
+  async dashboard(
+    motivoId?: string,
+    coordenadoriaId?: string,
+    dataInicio?: string,
+    dataFim?: string
+  ) {
+    const gte = dataInicio && dataFim ? new Date(dataInicio) : undefined;
+    const lte = dataInicio && dataFim ? new Date(dataFim) : undefined;
+    console.log(gte, lte);
+    const agendamentosFiltrados = await this.prisma.agendamento.findMany({
+      where: {
+        dataInicio: { gte, lte },
+        ...(motivoId && { motivoId }),
+        ...(coordenadoriaId && { coordenadoriaId })
+      },
+      include: { motivo: true, coordenadoria: true, tecnico: true },
     });
-    const motivos = await this.prisma.motivo.findMany({
-      select: { texto: true, agendamentos: true }
-    });
+    const coordenadorias = await this.reduceCoordenadorias(agendamentosFiltrados);
+    const motivos = await this.reduceMotivos(agendamentosFiltrados);
+
+    const agendamentos = await this.prisma.agendamento.findMany();
+    const totalAno = agendamentos.filter((agendamento) => agendamento.dataInicio.getFullYear() === new Date().getFullYear()).length;
+    const totalMes = agendamentos.filter((agendamento) =>
+      agendamento.dataInicio.getMonth() === new Date().getMonth() &&
+      agendamento.dataInicio.getFullYear() === new Date().getFullYear()
+    ).length;
+    const totalDia = agendamentos.filter((agendamento) =>
+      agendamento.dataInicio.getDate() === new Date().getDate() &&
+      agendamento.dataInicio.getMonth() === new Date().getMonth() &&
+      agendamento.dataInicio.getFullYear() === new Date().getFullYear()
+    ).length;
     return {
-      coordenadorias: coordenadorias.map((coordenadoria) => {
-        return coordenadoria.agendamentos.length > 0 && {
-          coordenadoria: coordenadoria.sigla,
-          quantidade: coordenadoria.agendamentos.length
-        }
-      }),
-      motivos: motivos.map((motivo) => {
-        return motivo.agendamentos.length > 0 && {
-          motivo: motivo.texto,
-          quantidade: motivo.agendamentos.length
-        }
-      })
+      coordenadorias,
+      motivos,
+      total: agendamentosFiltrados.length,
+      totalAno,
+      totalMes,
+      totalDia
     }
   }
 
-  async reduceCoordenadorias(agendamentos: Agendamento[]) {
+  async reduceCoordenadorias(agendamentos) {
     const coordenadorias = await this.prisma.coordenadoria.findMany();
     const coordenadoriasKV = coordenadorias.reduce((acc, cur) => ({ ...acc, [cur.sigla]: 0 }), {});
-    coordenadoriasKV['Sem Coordenadoria informada e/ou Fora de Padrão'] = 0;
-    agendamentos.map((agendamento) => {
-      for (let i = 0; i < coordenadorias.length; i++) {
-        if (agendamento.resumo.toUpperCase().replace(/[^a-zA-Z]/g, '').includes(coordenadorias[i].sigla.toUpperCase().replace(/[^a-zA-Z]/g, ''))) {
-          coordenadoriasKV[coordenadorias[i].sigla]++;
-          break;
-        }
-        if (i === coordenadorias.length - 1) coordenadoriasKV['Sem Coordenadoria informada e/ou Fora de Padrão']++;
-      }
-    })
-    for (const key in coordenadoriasKV)
-      if (coordenadoriasKV[key] === 0) delete coordenadoriasKV[key];
-    return coordenadoriasKV;
+    for (const agendamento of agendamentos) {
+      if (agendamento.coordenadoria)
+        coordenadoriasKV[agendamento.coordenadoria.sigla] += 1;
+    }
+    const coordenadoriasArr = [];
+    Object.keys(coordenadoriasKV).map((label) => coordenadoriasKV[label] > 0 && (coordenadoriasArr.push({ label, value: coordenadoriasKV[label]})));
+    return coordenadoriasArr;
   }
 
-
-  async reduceMotivos(agendamentos: Agendamento[]) {
+  async reduceMotivos(agendamentos) {
     const motivos = await this.prisma.motivo.findMany();
     const motivosKV = motivos.reduce((acc, cur) => ({ ...acc, [cur.texto]: 0 }), {});
-    motivosKV['Sem Motivo informado e/ou Fora de Padrão'] = 0;
-    agendamentos.map((agendamento) => {
-      for (let i = 0; i < motivos.length; i++) {
-        if (agendamento.resumo.toUpperCase().replace(/[^a-zA-Z]/g, '').includes(motivos[i].texto.toUpperCase().replace(/[^a-zA-Z]/g, ''))) {
-          motivosKV[motivos[i].texto]++;
-          break;
-        }
-        if (i === motivos.length - 1) motivosKV['Sem Motivo informado e/ou Fora de Padrão']++;
-      }
-    })
-    for (const key in motivosKV) {
-      if (motivosKV[key] === 0) delete motivosKV[key];
+    for (const agendamento of agendamentos) {
+      if (agendamento.motivo)
+        motivosKV[agendamento.motivo.texto] += 1;
     }
-    return motivosKV;    
+    const motivosArr = [];
+    Object.keys(motivosKV).map((label) => motivosKV[label] > 0 && (motivosArr.push({ label, value: motivosKV[label]})));
+    return motivosArr;
   }
-  // async importar(arquivo: Express.Multer.File) {
-  //   if (!arquivo) throw new BadRequestException('Nenhum arquivo enviado.');
-  //   const { path } = arquivo;
-  //   const results: Array<{
-  //     municipe: string;
-  //     tecnico: string;
-  //     processo: string;
-  //     coordenadoria_sigla: string;
-  //     dataInicio: Date;
-  //     dataFim: Date;
-  //     motivo_texto: string;
-  //     rg?: string;
-  //     cpf?: string;
-  //   }> = [];
-  //   let isFirstRow = true;
-  //   return new Promise((resolve, reject) => {
-  //     fs.createReadStream(path)
-  //       .pipe(csv({ separator: ';', headers: false }))
-  //       .on('data', async (row) => {
-  //         if (isFirstRow) {
-  //           isFirstRow = false;
-  //           return;
-  //         }
-  //         const dataInicio = parse(row[6], 'dd/MM/yyyy HH:mm:ss', new Date());
-  //         const dataFim = parse(row[7], 'dd/MM/yyyy HH:mm:ss', new Date());
-  //         const record = {
-  //           municipe: row[3].trim(),
-  //           tecnico: row[1].trim(),
-  //           processo: row[5].trim(),
-  //           coordenadoria_sigla: row[4].trim(),
-  //           dataInicio,
-  //           dataFim,
-  //           motivo_texto: row[0].trim(),
-  //           rg: row[2]?.trim() || '',
-  //         };
-  //         results.push(record);
-  //       })
-  //       .on('end', async () => {
-  //         for (const i in results) {
-  //           const achou = await this.prisma.agendamento.findFirst({
-  //             where: { ...results[i] },
-  //           });
-  //           if (achou) results.splice(+i, 1);
-  //         }
-  //         const coordenadorias = await this.prisma.coordenadoria.findMany({ select: { sigla: true, id: true }});
-  //         const motivos = await this.prisma.motivo.findMany({ select: { texto: true, id: true }});
-  //         const coordenadoriasKV = coordenadorias.reduce((acc, cur) => ({ ...acc, [cur.sigla]: cur.id }), {});
-  //         const motivosKV = motivos.reduce((acc, cur) => ({ ...acc, [cur.texto]: cur.id }), {});
-  //         if (results.length > 0) {
-  //           await this.prisma.agendamento.createMany({ data: 
-  //             results.map((agendamento) => ({
-  //               municipe: agendamento.municipe,
-  //               tecnico: agendamento.tecnico,
-  //               processo: agendamento.processo,
-  //               dataInicio: agendamento.dataInicio,
-  //               dataFim: agendamento.dataFim,
-  //               rg: agendamento.rg || null,
-  //               cpf: agendamento.cpf || null,
-  //               motivoId: motivosKV[agendamento.motivo_texto],
-  //               coordenadoriaId: coordenadoriasKV[agendamento.coordenadoria_sigla],
-  //             }))
-  //           });
-  //         }
-  //         fs.unlinkSync(path);
-  //         resolve({
-  //           message: `Foram inseridos ${results.length} novos registros.`,
-  //         });
-  //       })
-  //       .on('error', (error) => reject(error));
-  //   });
-  // }
 }

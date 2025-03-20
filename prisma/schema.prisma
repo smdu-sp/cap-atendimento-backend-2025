@@ -10,6 +10,7 @@ datasource db {
 enum Permissao {
   DEV
   ADM
+  TEC
   USR
 }
 
@@ -52,7 +53,7 @@ model Agendamento {
   motivo          Motivo?         @relation(fields: [motivoId], references: [id], onDelete: NoAction)
   coordenadoria   Coordenadoria?  @relation(fields: [coordenadoriaId], references: [id], onDelete: NoAction)
   tecnico         Usuario?        @relation(fields: [tecnicoId], references: [id], onDelete: NoAction)
-  
+
   @@map("agendamentos")
 }
 
