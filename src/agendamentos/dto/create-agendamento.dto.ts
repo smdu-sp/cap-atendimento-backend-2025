@@ -29,4 +29,7 @@ export class CreateAgendamentoDto {
     @ApiProperty()
     @IsDate()
     dataFim: Date
+    @ApiProperty()
+    @IsString()
+    resumo?: string
 }
