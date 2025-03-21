@@ -1,9 +1,11 @@
 import { Controller, Get, Post, Body, Param, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { AgendamentosService } from './agendamentos.service';
 import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
+import { ImportICSDto } from './dto/importICSDto.dto';
 import { Permissoes } from 'src/auth/decorators/permissoes.decorator';
 import { AgendamentosInterceptor } from './interceptors/agendamentos.interceptor';
 import { IsPublic } from 'src/auth/decorators/is-public.decorator';
+import { ApiBody, ApiConsumes } from '@nestjs/swagger';
 
 @Controller('agendamentos')
 export class AgendamentosController {
@@ -35,6 +37,8 @@ export class AgendamentosController {
   }
 
   @IsPublic()
+  @ApiBody({description:'arquivo de extensão .ics para importação de dados', type: ImportICSDto})
+  @ApiConsumes('multipart/form-data')
   @Post('importar')
   @UseInterceptors(AgendamentosInterceptor)
   async importarICS(@UploadedFile() arquivo: Express.Multer.File) {
