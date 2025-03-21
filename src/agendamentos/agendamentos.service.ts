@@ -128,14 +128,14 @@ export class AgendamentosService {
     dataInicio?: string,
     dataFim?: string
   ) {
-    const gte = dataInicio && dataFim ? new Date(dataInicio) : undefined;
-    const lte = dataInicio && dataFim ? new Date(dataFim) : undefined;
-    console.log(gte, lte);
+    console.log({ dataInicio, dataFim });
+    const gte = (dataInicio && dataFim) && (dataInicio !== '' && dataFim !== '') ? new Date(dataInicio) : undefined;
+    const lte = (dataInicio && dataFim) && (dataInicio !== '' && dataFim !== '') ? new Date(dataFim) : undefined;
     const agendamentosFiltrados = await this.prisma.agendamento.findMany({
       where: {
         dataInicio: { gte, lte },
-        ...(motivoId && { motivoId }),
-        ...(coordenadoriaId && { coordenadoriaId })
+        ...(motivoId && motivoId !== 'all' && motivoId !== '' && { motivoId }),
+        ...(coordenadoriaId && coordenadoriaId !== 'all' && coordenadoriaId !== '' && { coordenadoriaId })
       },
       include: { motivo: true, coordenadoria: true, tecnico: true },
     });
@@ -156,7 +156,7 @@ export class AgendamentosService {
     return {
       coordenadorias,
       motivos,
-      agendamentosMes: [{ label: "Março/2025", totalMes }],
+      agendamentosMes: [{ label: "Março/2025", value: totalMes }],
       total: agendamentosFiltrados.length,
       totalAno,
       totalMes,
