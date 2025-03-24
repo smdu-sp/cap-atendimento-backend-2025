@@ -7,6 +7,8 @@ export class EuResponseDTO {
     @ApiProperty()
     nome: string
     @ApiProperty()
+    nomeSocial?: string
+    @ApiProperty()
     login: string
     @ApiProperty()
     email: string

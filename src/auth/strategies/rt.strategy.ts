@@ -15,7 +15,7 @@ export class RtStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
     });
   }
 
-  async validate(payload: UsuarioPayload): Promise<Usuario> {
+  async validate(payload: UsuarioPayload) {
     const usuario = await this.usuariosService.buscarPorId(payload.sub);
     if (!usuario) throw new Error('Usuário não encontrado');
     await this.usuariosService.atualizarUltimoLogin(payload.sub);

@@ -5,6 +5,7 @@ export interface UsuarioPayload {
   login: string;
   email: string;
   nome: string;
+  nomeSocial?: string;
   status: boolean;
   avatar?: string;
   permissao: Permissao;

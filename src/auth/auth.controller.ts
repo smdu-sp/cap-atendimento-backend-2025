@@ -25,12 +25,17 @@ import {
 import { UsuarioToken } from './models/UsuarioToken';
 import { LoginDto } from './models/login.dto';
 import { EuResponseDTO } from './models/eu-response.dto';
+import { UsuariosService } from 'src/usuarios/usuarios.service';
+import { UsuarioResponseDTO } from 'src/usuarios/dto/usuario-response.dto';
 
 @ApiBearerAuth()
 @ApiTags('Auth')
 @Controller()
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usuariosService: UsuariosService
+  ) {}
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -56,9 +61,9 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Retorna 200 se o sistema encontrar o usuário logado.',
-    type: EuResponseDTO,
+    type: UsuarioResponseDTO,
   })
   usuarioAtual(@UsuarioAtual() usuario: Usuario) {
-    return usuario;
+    return this.usuariosService.buscarPorId(usuario.id);
   }
 }
