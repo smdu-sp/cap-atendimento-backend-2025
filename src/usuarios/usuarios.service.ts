@@ -123,9 +123,9 @@ export class UsuariosService {
     id: string,
     updateUsuarioDto: UpdateUsuarioDto,
   ): Promise<UsuarioResponseDTO> {
-    const usuarioLogado: Usuario = await this.buscarPorId(usuario.id);
+    const usuarioLogado = await this.buscarPorId(usuario.id);
     if (updateUsuarioDto.login) {
-      const usuario: Usuario = await this.buscarPorLogin(updateUsuarioDto.login);
+      const usuario = await this.buscarPorLogin(updateUsuarioDto.login);
       if (usuario && usuario.id !== id) throw new ForbiddenException('Login já cadastrado.');
     }
     const usuarioAntes = await this.prisma.usuario.findUnique({ where: { id }});
@@ -196,10 +196,10 @@ export class UsuariosService {
   }
 
   async buscarNovo(login: string): Promise<BuscarNovoResponseDTO> {
-    const usuarioExiste: Usuario = await this.buscarPorLogin(login);
+    const usuarioExiste = await this.buscarPorLogin(login);
     if (usuarioExiste && usuarioExiste.status === true) throw new ForbiddenException('Login já cadastrado.');
     if (usuarioExiste && usuarioExiste.status !== true){
-      const usuarioReativado: Usuario = await this.prisma.usuario.update({ 
+      const usuarioReativado = await this.prisma.usuario.update({ 
         where: { id: usuarioExiste.id }, 
         data: { status: true } 
       });
