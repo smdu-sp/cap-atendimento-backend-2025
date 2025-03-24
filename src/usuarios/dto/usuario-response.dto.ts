@@ -7,6 +7,8 @@ export class UsuarioResponseDTO {
     @ApiProperty()
     nome: string
     @ApiProperty()
+    nomeSocial: string
+    @ApiProperty()
     login: string
     @ApiProperty()
     email: string

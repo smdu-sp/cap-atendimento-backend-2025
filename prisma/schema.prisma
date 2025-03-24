@@ -17,6 +17,7 @@ enum Permissao {
 model Usuario {
   id            String    @id @default(uuid())
   nome          String
+  nomeSocial    String?
   login         String    @unique
   email         String    @unique
   permissao     Permissao @default(USR)
@@ -46,6 +47,7 @@ model Agendamento {
   motivoId        String?
   coordenadoriaId String?
   tecnicoId       String?
+  email           String?
 
   criadoEm        DateTime        @default(now())
   atualizadoEm    DateTime        @default(now()) @updatedAt

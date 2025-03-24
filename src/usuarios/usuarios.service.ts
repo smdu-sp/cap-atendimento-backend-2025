@@ -83,6 +83,7 @@ export class UsuariosService {
     const searchParams = {
       ...(busca && { OR: [
         { nome: { contains: busca }},
+        { nomeSocial: { contains: busca }},
         { login: { contains: busca }},
         { email: { contains: busca }},
       ]}),
