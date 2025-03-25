@@ -118,7 +118,6 @@ export class AgendamentosService {
     // return agendamentos.length;
     const result = await this.prisma.agendamento.createMany({ data: agendamentos });
     const result2 = await this.prisma.$queryRawUnsafe('DELETE FROM agendamentos WHERE id IN(SELECT id FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY resumo, dataInicio, dataFim ORDER BY id) AS number FROM agendamentos) t WHERE number > 1);');
-    console.log({ result, result2 });
     return result;
   }
 
@@ -128,7 +127,6 @@ export class AgendamentosService {
     dataInicio?: string,
     dataFim?: string
   ) {
-    console.log({ dataInicio, dataFim });
     const gte = (dataInicio && dataFim) && (dataInicio !== '' && dataFim !== '') ? new Date(dataInicio) : undefined;
     const lte = (dataInicio && dataFim) && (dataInicio !== '' && dataFim !== '') ? new Date(dataFim) : undefined;
     const agendamentosFiltrados = await this.prisma.agendamento.findMany({
