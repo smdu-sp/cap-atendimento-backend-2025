@@ -519,6 +519,17 @@ describe('Usuarios.service testes unitários', () => {
         id: expect.any(String)
       }
     })
+  })
+
+  //buscar por nome
+
+  it('deverá buscar um usuario pelo nome', async () => {
+
+  })
+
+  //buscar novo
+
+  it('deverá buscar um novo usuario', async () => {
 
   })
 
