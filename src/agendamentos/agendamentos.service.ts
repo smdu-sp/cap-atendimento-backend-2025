@@ -4,7 +4,7 @@ import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AppService } from 'src/app.service';
 import { Agendamento, Coordenadoria, Motivo } from '@prisma/client';
-import * as ical from 'node-ical';
+import * as ical from 'node-ical'
 import * as fs from 'fs';
 
 @Injectable()
@@ -12,21 +12,21 @@ export class AgendamentosService {
   constructor(
     private prisma: PrismaService,
     private app: AppService,
-  ) {}
+  ) { }
 
   async listaCompleta(): Promise<Agendamento[]> {
-    const agendamentos: Agendamento[] = await this.prisma.agendamento.findMany({ orderBy: { dataInicio: 'asc' }});
+    const agendamentos: Agendamento[] = await this.prisma.agendamento.findMany({ orderBy: { dataInicio: 'asc' } });
     if (!agendamentos) return [];
     return agendamentos;
   }
-  
+
   async criar(createAgendamentoDto: CreateAgendamentoDto): Promise<Agendamento> {
     const { motivoId, coordenadoriaId, tecnicoId } = createAgendamentoDto;
-    const motivo: Motivo = await this.prisma.motivo.findFirst({ where: { id: motivoId }});
+    const motivo: Motivo = await this.prisma.motivo.findFirst({ where: { id: motivoId } });
     if (!motivo) throw new BadRequestException('Motivo não encontrado');
-    const coordenadoria: Coordenadoria = await this.prisma.coordenadoria.findFirst({ where: { id: coordenadoriaId }});
+    const coordenadoria: Coordenadoria = await this.prisma.coordenadoria.findFirst({ where: { id: coordenadoriaId } });
     if (!coordenadoria) throw new BadRequestException('Coordenadoria não encontrada');
-    const tecnico = await this.prisma.usuario.findFirst({ where: { id: tecnicoId }});
+    const tecnico = await this.prisma.usuario.findFirst({ where: { id: tecnicoId } });
     if (!tecnico) throw new BadRequestException('Técnico não encontrado');
     const novoAgendamento = await this.prisma.agendamento.create({
       data: createAgendamentoDto
@@ -42,11 +42,13 @@ export class AgendamentosService {
   ): Promise<{ total: number, pagina: number, limite: number, data: Agendamento[] }> {
     [pagina, limite] = this.app.verificaPagina(pagina, limite);
     const searchParams = {
-      ...(busca && { OR: [
-        { municipe: { contains: busca }},
-        { rg: { contains: busca }},
-        { cpf: { contains: busca }}
-      ]})
+      ...(busca && {
+        OR: [
+          { municipe: { contains: busca } },
+          { rg: { contains: busca } },
+          { cpf: { contains: busca } }
+        ]
+      })
     };
     const total: number = await this.prisma.agendamento.count({ where: searchParams });
     if (total == 0) return { total: 0, pagina: 0, limite: 0, data: [] };
@@ -113,7 +115,7 @@ export class AgendamentosService {
         });
       }
     };
-    fs.unlink(path, (err) => { if (err) console.log(err)});
+    fs.unlink(path, (err) => { if (err) console.log(err) });
     // return agendamentos.length;
     const result = await this.prisma.agendamento.createMany({ data: agendamentos });
     const result2 = await this.prisma.$queryRawUnsafe('DELETE FROM agendamentos WHERE id IN(SELECT id FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY resumo, dataInicio, dataFim ORDER BY id) AS number FROM agendamentos) t WHERE number > 1);');
@@ -183,7 +185,7 @@ export class AgendamentosService {
     for (const key in motivosKV) {
       if (motivosKV[key] === 0) delete motivosKV[key];
     }
-    return motivosKV;    
+    return motivosKV;
   }
   // async importar(arquivo: Express.Multer.File) {
   //   if (!arquivo) throw new BadRequestException('Nenhum arquivo enviado.');

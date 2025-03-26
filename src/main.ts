@@ -4,9 +4,11 @@ import { AppModule } from './app.module';
 import { stringify } from 'json-bigint';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { json, urlencoded } from 'express';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(new ValidationPipe());
   app.use((req, res, next) => {
     res.json = (data) => {
       return res.send(stringify(data));
@@ -27,5 +29,7 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
   await app.listen(port);
   console.log("API outorga rodando em http://localhost:" + port);
+  console.log("SwaggerUI rodando em http://localhost:" + port + "/api");
+
 }
 bootstrap();
