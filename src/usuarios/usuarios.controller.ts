@@ -68,7 +68,7 @@ export class UsuariosController {
 
   @Permissoes('ADM')
   @Get('buscar-tecnicos')
-  buscarTecnicos(): Promise<UsuarioResponseDTO[]> {
+  buscarTecnicos(): Promise<{ id: string, nome: string }[]> {
     return this.usuariosService.buscarTecnicos();
   }
 
