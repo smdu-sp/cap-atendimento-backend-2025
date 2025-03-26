@@ -67,6 +67,12 @@ export class UsuariosController {
   }
 
   @Permissoes('ADM')
+  @Get('buscar-tecnicos')
+  buscarTecnicos(): Promise<UsuarioResponseDTO[]> {
+    return this.usuariosService.buscarTecnicos();
+  }
+
+  @Permissoes('ADM')
   @Delete('desativar/:id')
   excluir(@Param('id') id: string): Promise<UsuarioDesativadoResponseDTO> {
     return this.usuariosService.excluir(id);

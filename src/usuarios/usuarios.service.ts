@@ -51,6 +51,15 @@ export class UsuariosService {
     if (!lista || lista.length == 0) throw new ForbiddenException('Nenhum usuário encontrado.');
     return lista;
   }
+  
+  async buscarTecnicos(): Promise<UsuarioResponseDTO[]> {
+    const lista: Usuario[] = await this.prisma.usuario.findMany({
+      where: { permissao: 'TEC' },
+      orderBy: { nome: 'asc' },
+    });
+    if (!lista || lista.length == 0) throw new ForbiddenException('Nenhum técnico encontrado.');
+    return lista;
+  }
 
   async criar(
     createUsuarioDto: CreateUsuarioDto,
