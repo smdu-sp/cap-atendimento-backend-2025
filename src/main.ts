@@ -19,8 +19,8 @@ async function bootstrap() {
   app.enableCors({ origin: 'http://localhost:3001' });
   const options = new DocumentBuilder()
     .addBearerAuth()
-    .setTitle('Outorga Onerosa - Relatórios')
-    .setDescription('Backend em NestJS para aplicação de relatórios de Outorga Onerosa.',)
+    .setTitle('Atendimento ao Público - Agendamentos')
+    .setDescription('Backend em NestJS para aplicação de agendamento de Atendimentos ao Público.',)
     .setVersion('versão 1.0')
     .build();
   const document = SwaggerModule.createDocument(app, options);
