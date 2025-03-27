@@ -261,5 +261,105 @@ describe('Agendamento.service Testes', () => {
 
     })
 
+    //buscar tudo
+
+    it('deverá buscar tudo de agendamentos', async () => {
+
+        const mockListAgendamentos: Agendamento[] = [
+            {
+                id: '123e4567-e89b-12d3-a456-426614174011',
+                municipe: 'João Silva',
+                rg: '12345678',
+                cpf: '123.456.789-00',
+                processo: 'Processo 1',
+                dataInicio: new Date('2025-03-01T10:00:00Z'),
+                dataFim: new Date('2025-03-01T11:00:00Z'),
+                importado: false,
+                legado: false,
+                resumo: 'Resumo do agendamento 1',
+                motivoId: '123e4567-e89b-12d3-a456-426614174005',
+                coordenadoriaId: '123e4567-e89b-12d3-a456-426614174004',
+                tecnicoId: '123e4567-e89b-12d3-a456-426614174003',
+                criadoEm: new Date(),
+                atualizadoEm: new Date(),
+            },
+            {
+                id: '123e4567-e89b-12d3-a456-426614174012',
+                municipe: 'Maria Oliveira',
+                rg: '87654321',
+                cpf: '987.654.321-00',
+                processo: 'Processo 2',
+                dataInicio: new Date('2025-03-02T14:00:00Z'),
+                dataFim: new Date('2025-03-02T15:00:00Z'),
+                importado: true,
+                legado: false,
+                resumo: 'Resumo do agendamento 2',
+                motivoId: '123e4567-e89b-12d3-a456-426614174006',
+                coordenadoriaId: '123e4567-e89b-12d3-a456-426614174007',
+                tecnicoId: '123e4567-e89b-12d3-a456-426614174008',
+                criadoEm: new Date(),
+                atualizadoEm: new Date(),
+            },
+            {
+                id: '123e4567-e89b-12d3-a456-426614174013',
+                municipe: 'Carlos Pereira',
+                rg: '11223344',
+                cpf: '111.222.333-44',
+                processo: 'Processo 3',
+                dataInicio: new Date('2025-03-03T09:00:00Z'),
+                dataFim: new Date('2025-03-03T10:00:00Z'),
+                importado: false,
+                legado: true,
+                resumo: 'Resumo do agendamento 3',
+                motivoId: '123e4567-e89b-12d3-a456-426614174009',
+                coordenadoriaId: '123e4567-e89b-12d3-a456-426614174010',
+                tecnicoId: '123e4567-e89b-12d3-a456-426614174011',
+                criadoEm: new Date(),
+                atualizadoEm: new Date(),
+            },
+        ];
+
+        const mockPaginacao = {
+            total: 3,
+            pagina: 1,
+            limite: 10,
+            data: mockListAgendamentos
+        };
+
+        const mockParams = {
+            pagina: 1,
+            limite: 10,
+            busca: "Resumo",
+        };
+
+        (prisma.agendamento.count as jest.Mock).mockResolvedValue(3);
+        jest.spyOn(app, 'verificaPagina').mockReturnValue([1, 10]);
+        (prisma.agendamento.findMany as jest.Mock).mockResolvedValue(mockListAgendamentos);
+
+        const result = await service.buscarTudo(
+            mockParams.pagina,
+            mockParams.limite,
+            mockParams.busca
+        )
+
+        expect(result).not.toBe(null)
+        expect(result.data).toEqual(mockListAgendamentos)
+        expect(prisma.agendamento.count).toHaveBeenCalledWith({
+            where: {
+                OR: [
+                    { municipe: { contains: expect.any(String) } },
+                    { rg: { contains: expect.any(String) } },
+                    { cpf: { contains: expect.any(String) } }
+                ]
+            }
+        })
+
+
+
+
+
+
+    })
+
 
 });
