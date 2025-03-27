@@ -19,6 +19,46 @@ export class AgendamentosService {
     if (!agendamentos) return [];
     return agendamentos;
   }
+
+  async agendaDiaria(
+    busca?: string
+  ): Promise<Agendamento[]> {
+    const data = new Date();
+    const gte = new Date(
+      data.getFullYear(),
+      data.getMonth(),
+      data.getDate(),
+      0,
+      0,
+      0
+    );
+    const lte = new Date(
+      data.getFullYear(),
+      data.getMonth(),
+      data.getDate(),
+      23,
+      59,
+      59
+    );
+    console.log(gte.toLocaleTimeString(), lte.toLocaleTimeString());
+    const agendamentos: Agendamento[] = await this.prisma.agendamento.findMany({
+      where: { 
+        dataInicio: { gte, lte },
+        ...(busca && busca !== '' && { 
+          OR: [
+            { resumo: { contains: busca }}, 
+            { municipe: { contains: busca }},
+            { processo: { contains: busca }},
+            { rg: { contains: busca }},
+            { cpf: { contains: busca }}
+          ]
+        })
+      },
+      orderBy: { dataInicio: 'asc' }
+    });
+    if (!agendamentos) return [];
+    return agendamentos;
+  }
   
   async criar(createAgendamentoDto: CreateAgendamentoDto): Promise<Agendamento> {
     const { motivoId, coordenadoriaId, tecnicoId } = createAgendamentoDto;
@@ -73,12 +113,19 @@ export class AgendamentosService {
     return agendamento;
   }
 
+  async atualizar(id: string, updateAgendamentoDto: Partial<CreateAgendamentoDto>): Promise<Agendamento> {
+    await this.buscarPorId(id);
+    const agendamento = await this.prisma.agendamento.update({ where: { id }, data: updateAgendamentoDto });
+    if (!agendamento) throw new InternalServerErrorException('Não foi possível atualizar o agendamento.');
+    return agendamento;
+  }
+
   async importarICS(arquivo: Express.Multer.File) {
     if (!arquivo) throw new BadRequestException('Nenhum arquivo enviado.');
     const { path } = arquivo;
     const events = Object.values(ical.sync.parseFile(path));
     // loop through events and log them
-    const agendamentos: { resumo: string, dataInicio: Date, dataFim: Date, importado: boolean, legado: boolean, coordenadoriaId: string, motivoId: string }[] = [];
+    const novosAgendamentos: { resumo: string, dataInicio: Date, dataFim: Date, importado: boolean, legado: boolean, coordenadoriaId: string, motivoId: string }[] = [];
     const coordenadorias = await this.prisma.coordenadoria.findMany();
     const coordenadoriasKV = coordenadorias.reduce((acc, cur) => ({ ...acc, [cur.sigla]: cur.id }), {});
     const motivos = await this.prisma.motivo.findMany();
@@ -103,7 +150,13 @@ export class AgendamentosService {
         const resumo = evento.summary;
         const dataInicio = new Date(evento.start);
         const dataFim = new Date(evento.end);
-        agendamentos.push({
+        const repetido = novosAgendamentos.find((agendamento) => {
+          return agendamento.resumo === resumo 
+          && agendamento.dataInicio.getTime() === dataInicio.getTime() 
+          && agendamento.dataFim.getTime() === dataFim.getTime()
+        });
+        if (repetido || resumo.toLowerCase().includes('cancelado')) continue;
+        novosAgendamentos.push({
           resumo,
           dataInicio,
           dataFim,
@@ -116,9 +169,19 @@ export class AgendamentosService {
     };
     fs.unlink(path, (err) => { if (err) console.log(err)});
     // return agendamentos.length;
-    const result = await this.prisma.agendamento.createMany({ data: agendamentos });
-    const result2 = await this.prisma.$queryRawUnsafe('DELETE FROM agendamentos WHERE id IN(SELECT id FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY resumo, dataInicio, dataFim ORDER BY id) AS number FROM agendamentos) t WHERE number > 1);');
-    return result;
+    try {
+      const [ enviados, duplicados ] = await this.prisma.$transaction(async (prisma) => {
+        const enviados = await prisma.agendamento.createMany({ data: novosAgendamentos });
+        const duplicados: { id: string }[] = await prisma.$queryRawUnsafe('SELECT id FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY resumo, dataInicio, dataFim ORDER BY id) AS number FROM agendamentos) t WHERE number > 1;');
+        await prisma.$queryRawUnsafe('DELETE FROM agendamentos WHERE id IN(SELECT id FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY resumo, dataInicio, dataFim ORDER BY id) AS number FROM agendamentos) t WHERE number > 1);');
+        return [ enviados.count, duplicados.length || 0 ];
+      })
+      const agendamentos = enviados > duplicados ? enviados - duplicados : 0;
+      return { agendamentos, duplicados };
+    } catch (error) {
+      console.log(error);
+      throw new InternalServerErrorException('Erro ao importar agendamentos.');
+    }
   }
 
   async dashboard(
@@ -141,7 +204,7 @@ export class AgendamentosService {
     const motivos = await this.reduceMotivos(agendamentosFiltrados);
 
     const agendamentos = await this.prisma.agendamento.findMany();
-    const totalAno = agendamentos.filter((agendamento) => agendamento.dataInicio.getFullYear() === new Date().getFullYear()).length;
+    const totalAno = agendamentos.filter((agendamento) => agendamento.dataInicio >= new Date(new Date().getFullYear(), 0, 1)).length;
     const totalMes = agendamentos.filter((agendamento) =>
       agendamento.dataInicio.getMonth() === new Date().getMonth() &&
       agendamento.dataInicio.getFullYear() === new Date().getFullYear()
@@ -151,10 +214,24 @@ export class AgendamentosService {
       agendamento.dataInicio.getMonth() === new Date().getMonth() &&
       agendamento.dataInicio.getFullYear() === new Date().getFullYear()
     ).length;
+
+    const agendamentosMes: { label: string; value: number }[] = [];
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth();
+    const anoAtual = hoje.getFullYear();
+    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    for (let i = 0; i <= mesAtual+1; i++) {
+      const chamadosMes = agendamentosFiltrados.filter((agendamento) => {
+        const mes = new Date(agendamento.dataInicio).getMonth();
+        const ano = new Date(agendamento.dataInicio).getFullYear();
+        return mes === i && ano === anoAtual;
+      });
+      agendamentosMes.push({ label: `${meses[i]}/${anoAtual}`, value: chamadosMes.length });
+    }
     return {
       coordenadorias,
       motivos,
-      agendamentosMes: [{ label: "Março/2025", value: totalMes }],
+      agendamentosMes,
       total: agendamentosFiltrados.length,
       totalAno,
       totalMes,

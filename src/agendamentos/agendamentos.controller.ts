@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { AgendamentosService } from './agendamentos.service';
 import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
 import { ImportICSDto } from './dto/importICS.dto';
@@ -22,6 +22,13 @@ export class AgendamentosController {
     return this.agendamentosService.listaCompleta();
   }
 
+  @Get('hoje')
+  agendaDiaria(
+    @Query('busca') busca?:  string
+  ) {
+    return this.agendamentosService.agendaDiaria(busca);
+  }
+
   @Get('buscar-tudo')
   buscarTudo(
       @Query('pagina')  pagina?: string,
@@ -34,6 +41,14 @@ export class AgendamentosController {
   @Get('buscar-por-id/:id')
   buscarPorId(@Param('id') id: string) {
     return this.agendamentosService.buscarPorId(id);
+  }
+
+  @Patch('atualizar/:id')
+  atualizar(
+    @Param('id') id: string,
+    @Body() updateAgendamentoDto: Partial<CreateAgendamentoDto>
+  ) {
+    return this.agendamentosService.atualizar(id, updateAgendamentoDto);
   }
 
   @ApiBody({description:'arquivo de extensão .ics para importação de dados', type: ImportICSDto})
