@@ -11,6 +11,8 @@ import { CoordenadoriasService } from "src/coordenadorias/coordenadorias.service
 import { UsuariosService } from "src/usuarios/usuarios.service";
 import { TestingModule, Test } from "@nestjs/testing";
 import { PrismaService } from "src/prisma/prisma.service";
+import { mock } from "node:test";
+import { $Enums } from "@prisma/client";
 
 describe('Agendamento.service Testes', () => {
     let service: AgendamentosService;
@@ -28,7 +30,8 @@ describe('Agendamento.service Testes', () => {
             findMany: jest.fn(),
             findUnique: jest.fn(),
             findFirst: jest.fn(),
-            count: jest.fn()
+            count: jest.fn(),
+
         },
         motivo: {
             create: jest.fn(),
@@ -353,10 +356,230 @@ describe('Agendamento.service Testes', () => {
                 ]
             }
         })
+    })
+
+    //buscar por id
+
+    it('deverá buscar agendamento por id', async () => {
+
+        const mockFindAgendamento: Agendamento = {
+            id: '123e4567-e89b-12d3-a456-426614174014',
+            municipe: 'Ana Souza',
+            rg: '99887766',
+            cpf: '999.888.777-66',
+            processo: 'Processo 4',
+            dataInicio: new Date('2025-03-04T10:00:00Z'),
+            dataFim: new Date('2025-03-04T11:00:00Z'),
+            importado: false,
+            legado: false,
+            resumo: 'Resumo do agendamento 4',
+            motivoId: '123e4567-e89b-12d3-a456-426614174015',
+            coordenadoriaId: '123e4567-e89b-12d3-a456-426614174016',
+            tecnicoId: '123e4567-e89b-12d3-a456-426614174017',
+            criadoEm: new Date(),
+            atualizadoEm: new Date(),
+        };
 
 
+        (prisma.agendamento.findUnique as jest.Mock).mockResolvedValue(mockFindAgendamento);
 
+        const result = await service.buscarPorId('123e4567-e89b-12d3-a456-426614174014')
 
+        expect(result).not.toBe(null)
+        expect(result).toEqual(mockFindAgendamento)
+        expect(prisma.agendamento.findUnique).toHaveBeenCalledWith({
+            where: {
+                id: expect.any(String)
+            }
+        })
+    })
+
+    //importar arquivos .ICS
+
+    it('deverá importar arquivos .ICS', async () => {
+        // const mockFindCoordenadorias: Coordenadoria[] = [
+        //     {
+        //         id: '123e4567-e89b-12d3-a456-426614174018',
+        //         sigla: 'XYZ',
+        //         status: true,
+        //         criadoEm: new Date(),
+        //         atualizadoEm: new Date(),
+        //     },
+        //     {
+        //         id: '123e4567-e89b-12d3-a456-426614174019',
+        //         sigla: 'LMN',
+        //         status: false,
+        //         criadoEm: new Date(),
+        //         atualizadoEm: new Date(),
+        //     },
+        //     {
+        //         id: '123e4567-e89b-12d3-a456-426614174020',
+        //         sigla: 'OPQ',
+        //         status: true,
+        //         criadoEm: new Date(),
+        //         atualizadoEm: new Date(),
+        //     },
+        // ];
+
+        // const mockDataFim: { resumo: string, dataInicio: Date, dataFim: Date, importado: boolean, legado: boolean, coordenadoriaId: string, motivoId: string }[] = [
+        //     {
+        //         resumo: 'Resumo do agendamento XYZ',
+        //         dataInicio: new Date('2025-03-01T10:00:00Z'),
+        //         dataFim: new Date('2025-03-01T11:00:00Z'),
+        //         importado: true,
+        //         legado: true,
+        //         coordenadoriaId: mockFindCoordenadorias[0].id,
+        //         motivoId: '123e4567-e89b-12d3-a456-426614174005',
+        //     },
+        //     {
+        //         resumo: 'Resumo do agendamento LMN',
+        //         dataInicio: new Date('2025-03-02T14:00:00Z'),
+        //         dataFim: new Date('2025-03-02T15:00:00Z'),
+        //         importado: true,
+        //         legado: true,
+        //         coordenadoriaId: mockFindCoordenadorias[1].id,
+        //         motivoId: '123e4567-e89b-12d3-a456-426614174006',
+        //     },
+        //     {
+        //         resumo: 'Resumo do agendamento OPQ',
+        //         dataInicio: new Date('2025-03-03T09:00:00Z'),
+        //         dataFim: new Date('2025-03-03T10:00:00Z'),
+        //         importado: true,
+        //         legado: true,
+        //         coordenadoriaId: mockFindCoordenadorias[2].id,
+        //         motivoId: '123e4567-e89b-12d3-a456-426614174007',
+        //     },
+        // ];
+
+        // const mockAgendamentosProcessados = [
+        //     {
+        //         resumo: 'Reunião XYZ - Avaliação de Projetos',
+        //         dataInicio: new Date('2025-03-01T10:00:00Z'),
+        //         dataFim: new Date('2025-03-01T11:00:00Z'),
+        //         coordenadoriaId: '123e4567-e89b-12d3-a456-426614174018',
+        //         motivoId: '123e4567-e89b-12d3-a456-426614174005',
+        //         importado: true,
+        //         legado: true
+        //     },
+        //     {
+        //         resumo: 'Treinamento LMN - Capacitação',
+        //         dataInicio: new Date('2025-03-02T14:00:00Z'),
+        //         dataFim: new Date('2025-03-02T15:00:00Z'),
+        //         coordenadoriaId: '123e4567-e89b-12d3-a456-426614174019',
+        //         motivoId: '123e4567-e89b-12d3-a456-426614174006',
+        //         importado: true,
+        //         legado: true
+        //     }
+        // ];
+
+        // const mockFile = {
+        //     fieldname: 'arquivo',
+        //     originalname: 'calendario.ics',
+        //     encoding: 'utf8',
+        //     mimetype: 'text/calendar',
+        //     destination: './uploads/',
+        //     filename: 'calendario_123.ics',
+        //     path: './uploads/calendario_123.ics',
+        //     size: 1024
+        // } as Express.Multer.File;
+
+        // (prisma.agendamento.createMany as jest.Mock).mockResolvedValue(mockAgendamentosProcessados)
+
+        // const result = await service.importarICS(mockFile)
+
+        // expect(result).not.toBe(null)
+        // expect(result).toEqual(mockDataFim)
+
+    })
+
+    //dashboard
+
+    it('deverá retornar um dashboard', async () => {
+        const dashParams = {
+            motivoId: '123e4567-e89b-12d3-a456-426614174005',
+            coordenadoriaId: '123e4567-e89b-12d3-a456-426614174018',
+            dataInicio: '2025-03-01T10:00:00Z',
+            dataFim: '2025-03-01T11:00:00Z',
+        };
+
+        const mockMotivos: Motivo[] = [
+            {
+                id: "1",
+                texto: "Consulta médica",
+                status: true,
+                criadoEm: new Date("2025-01-01"),
+                atualizadoEm: new Date("2025-01-01"),
+            },
+            {
+                id: "2",
+                texto: "Reunião de trabalho",
+                status: true,
+                criadoEm: new Date("2025-01-02"),
+                atualizadoEm: new Date("2025-01-02"),
+            },
+            {
+                id: "3",
+                texto: "Entrevista",
+                status: true,
+                criadoEm: new Date("2025-01-03"),
+                atualizadoEm: new Date("2025-01-03"),
+            }
+        ];
+
+        // Mock de lista de agendamentos
+        const mockAgendamentos: Agendamento[] = [
+            {
+                id: "1",
+                municipe: "João Silva",
+                rg: "12345678",
+                cpf: "123.456.789-00",
+                processo: "Processo 1",
+                dataInicio: new Date("2025-03-28T09:00:00"),
+                dataFim: new Date("2025-03-28T10:00:00"),
+                importado: false,
+                legado: false,
+                resumo: "Consulta médica com Dr. João",
+                motivoId: "1",
+                coordenadoriaId: "1",
+                tecnicoId: "1",
+                criadoEm: new Date("2025-03-01"),
+                atualizadoEm: new Date("2025-03-01"),
+            },
+            {
+                id: "2",
+                municipe: "Maria Oliveira",
+                rg: "87654321",
+                cpf: "987.654.321-00",
+                processo: "Processo 2",
+                dataInicio: new Date("2025-03-28T11:00:00"),
+                dataFim: new Date("2025-03-28T12:00:00"),
+                importado: false,
+                legado: false,
+                resumo: "Reunião de trabalho com equipe",
+                motivoId: "2",
+                coordenadoriaId: "2",
+                tecnicoId: "2",
+                criadoEm: new Date("2025-03-02"),
+                atualizadoEm: new Date("2025-03-02"),
+            }
+        ];
+
+        const mockDashboard = {
+            coordenadorias: [] as Coordenadoria[],
+            motivos: [] as Motivo[],
+            agendamentosMes: [{ label: "Março/2025", value: 0 }],
+            total: 0,
+            totalAno: 0,
+            totalMes: 0,
+            totalDia: 0
+        };
+
+        const gte = (dashParams.dataInicio && dashParams.dataFim) && (dashParams.dataInicio !== '' && dashParams.dataFim !== '') ? new Date(dashParams.dataInicio) : undefined;
+        const lte = (dashParams.dataInicio && dashParams.dataFim) && (dashParams.dataInicio !== '' && dashParams.dataFim !== '') ? new Date(dashParams.dataFim) : undefined;
+
+        (prisma.agendamento.findMany as jest.Mock).mockResolvedValue(mockAgendamentos)
+
+        const result = await service.dashboard(dashParams)
 
 
     })
