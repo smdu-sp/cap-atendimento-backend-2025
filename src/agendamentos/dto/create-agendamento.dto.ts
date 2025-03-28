@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger"
-import { IsDate, IsString } from "class-validator"
+import { StatusAgendamento } from "@prisma/client"
+import { IsDate, IsEnum, IsString } from "class-validator"
 
 export class CreateAgendamentoDto {
     @ApiProperty()
@@ -32,4 +33,7 @@ export class CreateAgendamentoDto {
     @ApiProperty()
     @IsString()
     resumo?: string
+    @ApiProperty()
+    @IsEnum(StatusAgendamento, { message: 'Status inválido!' })
+    status?: StatusAgendamento
 }
