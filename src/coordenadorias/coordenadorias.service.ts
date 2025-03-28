@@ -26,7 +26,7 @@ export class CoordenadoriasService {
   }
 
   async listaCompleta(): Promise<Coordenadoria[]> {
-    const coordenadorias: Coordenadoria[] = await this.prisma.coordenadoria.findMany({ orderBy: { sigla: 'asc' }});
+    const coordenadorias: Coordenadoria[] = await this.prisma.coordenadoria.findMany({ where: { status: true }, orderBy: { sigla: 'asc' }});
     if (!coordenadorias) return [];
     return coordenadorias;
   }
@@ -34,13 +34,17 @@ export class CoordenadoriasService {
   async buscarTudo(
     pagina: number = 1,
     limite: number = 10,
+    status?: string,
     busca?: string
   ): Promise<{ total: number, pagina: number, limite: number, data: Coordenadoria[] }> {
     [pagina, limite] = this.app.verificaPagina(pagina, limite);
     const searchParams = {
       ...(busca && { OR: [
         { sigla: { contains: busca }},
-      ]})
+      ]}),
+      ...(status && status !== '' && { 
+        status: status === 'ATIVO' ? true : (status === 'INATIVO' ? false : undefined) 
+      }),
     };
     const total: number = await this.prisma.coordenadoria.count({ where: searchParams });
     if (total == 0) return { total: 0, pagina: 0, limite: 0, data: [] };

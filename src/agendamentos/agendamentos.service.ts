@@ -40,7 +40,6 @@ export class AgendamentosService {
       59,
       59
     );
-    console.log(gte.toLocaleTimeString(), lte.toLocaleTimeString());
     const agendamentos: Agendamento[] = await this.prisma.agendamento.findMany({
       where: { 
         dataInicio: { gte, lte },
