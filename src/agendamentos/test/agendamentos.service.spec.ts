@@ -13,8 +13,9 @@ import { TestingModule, Test } from '@nestjs/testing';
 import { PrismaService } from 'src/prisma/prisma.service';
 import fs from 'src/usuarios/test/__mocks__/fs';
 import * as ical from 'src/usuarios/test/__mocks__/ical';
-
+import * as mockFs from 'mock-fs';
 import { $Enums } from '@prisma/client';
+
 
 describe('Agendamento.service Testes', () => {
     let service: AgendamentosService;
@@ -70,6 +71,7 @@ describe('Agendamento.service Testes', () => {
 
     jest.mock('fs');
     jest.mock('ical');
+    jest.mock('path');
 
     const MockAppService = {
         verificaPagina: jest
@@ -437,15 +439,13 @@ describe('Agendamento.service Testes', () => {
     //importar arquivos .ICS
 
     it('deverá importar arquivos .ICS', async () => {
-        // 1. Mock do arquivo ICS
         const mockFile = {
-            path: '/qualquer/caminho.ics', // Não precisa existir fisicamente
+            path: '/qualquer/caminho.ics',
             originalname: 'teste.ics',
             mimetype: 'text/calendar',
             size: 1024,
         } as Express.Multer.File;
 
-        // 2. Mock das coordenadorias
         const mockCoordenadorias = [
             {
                 id: 'coord-1',
@@ -463,7 +463,6 @@ describe('Agendamento.service Testes', () => {
             },
         ] as Coordenadoria[];
 
-        // 3. Mock dos motivos
         const mockMotivos = [
             {
                 id: 'motivo-1',
@@ -481,60 +480,15 @@ describe('Agendamento.service Testes', () => {
             },
         ] as Motivo[];
 
-        // 4. Configuração dos mocks do Prisma
         (prisma.coordenadoria.findMany as jest.Mock).mockResolvedValue(mockCoordenadorias);
         (prisma.motivo.findMany as jest.Mock).mockResolvedValue(mockMotivos);
         (prisma.agendamento.createMany as jest.Mock).mockResolvedValue({ count: 2 });
 
-        // 5. Mock adicional para garantir o parseFile
-        jest.mock('node-ical', () => ({
-            sync: {
-                parseFile: jest.fn().mockImplementation(() => ({
-                    event1: {
-                        type: 'VEVENT',
-                        summary: 'Evento CT - Reunião importante',
-                        start: new Date('2025-03-01T10:00:00'),
-                        end: new Date('2025-03-01T11:00:00'),
-                    },
-                    event2: {
-                        type: 'VEVENT',
-                        summary: 'ST - Atendimento técnico',
-                        start: new Date('2025-03-02T14:00:00'),
-                        end: new Date('2025-03-02T15:00:00'),
-                    }
-                }))
-            }
-        }));
-
-        // 6. Simulação do sistema de arquivos com mock-fs
-        mockFs({
-            '/qualquer/caminho.ics': `
-      BEGIN:VCALENDAR
-      BEGIN:VEVENT
-      SUMMARY:Evento CT - Reunião importante
-      DTSTART:20250301T100000Z
-      DTEND:20250301T110000Z
-      END:VEVENT
-      BEGIN:VEVENT
-      SUMMARY:ST - Atendimento técnico
-      DTSTART:20250302T140000Z
-      DTEND:20250302T150000Z
-      END:VEVENT
-      END:VCALENDAR
-          `,
-        });
-
-        // 7. Execução do teste
         const result = await service.importarICS(mockFile);
 
-        // 8. Verificações
         expect(result).not.toBe(null);
         expect(result).toEqual({ count: 2 });
-
-        // Verifica o parse do arquivo
         expect(ical.sync.parseFile).toHaveBeenCalledWith(mockFile.path);
-
-        // Verifica a criação dos agendamentos
         expect(prisma.agendamento.createMany).toHaveBeenCalledWith({
             data: [
                 {
@@ -557,8 +511,5 @@ describe('Agendamento.service Testes', () => {
                 },
             ],
         });
-
-        // Restaura o sistema de arquivos
-        mockFs.restore();
     });
 });

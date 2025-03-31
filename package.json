@@ -93,9 +93,7 @@
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
     "moduleNameMapper": {
-      "^src/(.*)$": "<rootDir>/$1",
-      "^fs$": "<rootDir>/src/agendamentos/__mocks__/fs.ts",
-      "^ical$": "<rootDir>/src/agendamentos/__mocks__/ical.ts"
+      "^src/(.*)$": "<rootDir>/$1"
     }
   }
 }
