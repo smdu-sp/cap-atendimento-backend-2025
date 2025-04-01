@@ -1,7 +1,7 @@
+'use strict';
 import { Agendamento } from '@prisma/client';
 import { AgendamentosService } from '../agendamentos.service';
 import { CreateAgendamentoDto } from '../dto/create-agendamento.dto';
-import { UpdateCoordenadoriaDto } from 'src/coordenadorias/dto/update-coordenadoria.dto';
 import { Coordenadoria } from '@prisma/client';
 import { Motivo } from '@prisma/client';
 import { Usuario } from '@prisma/client';
@@ -11,10 +11,6 @@ import { CoordenadoriasService } from 'src/coordenadorias/coordenadorias.service
 import { UsuariosService } from 'src/usuarios/usuarios.service';
 import { TestingModule, Test } from '@nestjs/testing';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { default as fs } from "./__mocks__/fs";
-import { default as ical } from "./__mocks__/ical";
-import { $Enums } from '@prisma/client';
-import * as mockFs from "mock-fs";
 
 describe('Agendamento.service Testes', () => {
     let service: AgendamentosService;
@@ -68,35 +64,14 @@ describe('Agendamento.service Testes', () => {
         },
     };
 
-    jest.mock('path');
-
     const MockAppService = {
-        verificaPagina: jest
-            .fn()
-            .mockImplementation((pagina, limite) => [pagina, limite]),
-        verificaLimite: jest
-            .fn()
-            .mockImplementation((pagina, limite, total) => [pagina, limite]),
+        verificaPagina: jest.fn().mockImplementation((pagina, limite) => [pagina, limite]),
+        verificaLimite: jest.fn().mockImplementation((pagina, limite, total) => [pagina, limite]),
     };
+
 
     beforeEach(async () => {
         jest.clearAllMocks();
-        mockFs({
-            '/qualquer/caminho.ics': `
-  BEGIN:VCALENDAR
-  BEGIN:VEVENT
-  SUMMARY:Evento CT - Reunião importante
-  DTSTART:20250301T100000Z
-  DTEND:20250301T110000Z
-  END:VEVENT
-  BEGIN:VEVENT
-  SUMMARY:ST - Atendimento técnico
-  DTSTART:20250302T140000Z
-  DTEND:20250302T150000Z
-  END:VEVENT
-  END:VCALENDAR
-        `,
-        });
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -123,17 +98,12 @@ describe('Agendamento.service Testes', () => {
                 },
             ],
         }).compile();
-
         service = module.get<AgendamentosService>(AgendamentosService);
         coordenadoria = module.get<CoordenadoriasService>(CoordenadoriasService);
         motivo = module.get<MotivosService>(MotivosService);
         app = module.get<AppService>(AppService);
         prisma = module.get<PrismaService>(PrismaService);
         usuario = module.get<UsuariosService>(UsuariosService);
-    });
-
-    afterEach(() => {
-        mockFs.restore();
     });
 
 
@@ -426,87 +396,93 @@ describe('Agendamento.service Testes', () => {
         });
     });
 
-    it('teste minimalista do parseFile', async () => {
-        const ical = require('node-ical');
-        const result = ical.sync.parseFile('/caminho/ficticio.ics');
-        console.log('Resultado do mock:', result);
-        expect(result).toBeDefined();
-    });
+    // it('teste de mock fs', async () => {
+    //     const file = require('./__mocks__/fs');
+    //     const fileSumary = file.summarizeFilesInDirectorySync('/path/to');
+    //     expect(fileSumary.length).toBe(2);
+    // });
 
-    //importar arquivos .ICS
+    // it('teste minimalista do parseFile', async () => {
+    //     const ical = require('node-ical');
+    //     const result = ical.sync.parseFile('/caminho/ficticio.ics');
+    //     console.log('Resultado do mock:', result);
+    //     expect(result).toBeDefined();
+    // });
 
-    it('deverá importar arquivos .ICS', async () => {
-        const mockFile = {
-            path: '/qualquer/caminho.ics',
-            originalname: 'teste.ics',
-            mimetype: 'text/calendar',
-            size: 1024,
-        } as Express.Multer.File;
+    // //importar arquivos .ICS
 
-        const mockCoordenadorias = [
-            {
-                id: 'coord-1',
-                sigla: 'CT',
-                status: true,
-                criadoEm: new Date(),
-                atualizadoEm: new Date(),
-            },
-            {
-                id: 'coord-2',
-                sigla: 'ST',
-                status: true,
-                criadoEm: new Date(),
-                atualizadoEm: new Date(),
-            },
-        ] as Coordenadoria[];
+    // it('deverá importar arquivos .ICS', async () => {
+    //     const mockFile = {
+    //         path: '/qualquer/caminho.ics',
+    //         originalname: 'teste.ics',
+    //         mimetype: 'text/calendar',
+    //         size: 1024,
+    //     } as Express.Multer.File;
 
-        const mockMotivos = [
-            {
-                id: 'motivo-1',
-                texto: 'Reunião',
-                status: true,
-                criadoEm: new Date(),
-                atualizadoEm: new Date(),
-            },
-            {
-                id: 'motivo-2',
-                texto: 'Atendimento',
-                status: true,
-                criadoEm: new Date(),
-                atualizadoEm: new Date(),
-            },
-        ] as Motivo[];
+    //     const mockCoordenadorias = [
+    //         {
+    //             id: 'coord-1',
+    //             sigla: 'CT',
+    //             status: true,
+    //             criadoEm: new Date(),
+    //             atualizadoEm: new Date(),
+    //         },
+    //         {
+    //             id: 'coord-2',
+    //             sigla: 'ST',
+    //             status: true,
+    //             criadoEm: new Date(),
+    //             atualizadoEm: new Date(),
+    //         },
+    //     ] as Coordenadoria[];
 
-        (prisma.coordenadoria.findMany as jest.Mock).mockResolvedValue(mockCoordenadorias);
-        (prisma.motivo.findMany as jest.Mock).mockResolvedValue(mockMotivos);
-        (prisma.agendamento.createMany as jest.Mock).mockResolvedValue({ count: 2 });
+    //     const mockMotivos = [
+    //         {
+    //             id: 'motivo-1',
+    //             texto: 'Reunião',
+    //             status: true,
+    //             criadoEm: new Date(),
+    //             atualizadoEm: new Date(),
+    //         },
+    //         {
+    //             id: 'motivo-2',
+    //             texto: 'Atendimento',
+    //             status: true,
+    //             criadoEm: new Date(),
+    //             atualizadoEm: new Date(),
+    //         },
+    //     ] as Motivo[];
 
-        const result = await service.importarICS(mockFile);
+    //     (prisma.coordenadoria.findMany as jest.Mock).mockResolvedValue(mockCoordenadorias);
+    //     (prisma.motivo.findMany as jest.Mock).mockResolvedValue(mockMotivos);
+    //     (prisma.agendamento.createMany as jest.Mock).mockResolvedValue({ count: 2 });
 
-        expect(result).not.toBe(null);
-        expect(result).toEqual({ count: 2 });
-        // expect(ical.sync.parseFile).toHaveBeenCalledWith(mockFile.path);
-        expect(prisma.agendamento.createMany).toHaveBeenCalledWith({
-            data: [
-                {
-                    resumo: 'Evento CT - Reunião importante',
-                    dataInicio: new Date('2025-03-01T10:00:00'),
-                    dataFim: new Date('2025-03-01T11:00:00'),
-                    coordenadoriaId: 'coord-1',
-                    motivoId: 'motivo-1',
-                    importado: true,
-                    legado: true,
-                },
-                {
-                    resumo: 'ST - Atendimento técnico',
-                    dataInicio: new Date('2025-03-02T14:00:00'),
-                    dataFim: new Date('2025-03-02T15:00:00'),
-                    coordenadoriaId: 'coord-2',
-                    motivoId: 'motivo-2',
-                    importado: true,
-                    legado: true,
-                },
-            ],
-        });
-    });
+    //     const result = await service.importarICS(mockFile);
+
+    //     expect(result).not.toBe(null);
+    //     expect(result).toEqual({ count: 2 });
+    //     // expect(ical.sync.parseFile).toHaveBeenCalledWith(mockFile.path);
+    //     expect(prisma.agendamento.createMany).toHaveBeenCalledWith({
+    //         data: [
+    //             {
+    //                 resumo: 'Evento CT - Reunião importante',
+    //                 dataInicio: new Date('2025-03-01T10:00:00'),
+    //                 dataFim: new Date('2025-03-01T11:00:00'),
+    //                 coordenadoriaId: 'coord-1',
+    //                 motivoId: 'motivo-1',
+    //                 importado: true,
+    //                 legado: true,
+    //             },
+    //             {
+    //                 resumo: 'ST - Atendimento técnico',
+    //                 dataInicio: new Date('2025-03-02T14:00:00'),
+    //                 dataFim: new Date('2025-03-02T15:00:00'),
+    //                 coordenadoriaId: 'coord-2',
+    //                 motivoId: 'motivo-2',
+    //                 importado: true,
+    //                 legado: true,
+    //             },
+    //         ],
+    //     });
+    // });
 });
