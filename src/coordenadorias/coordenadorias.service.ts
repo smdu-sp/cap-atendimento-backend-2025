@@ -53,7 +53,12 @@ export class CoordenadoriasService {
       where: searchParams,
       orderBy: { sigla: 'asc' },
       skip: (pagina - 1) * limite,
-      take: limite
+      take: limite,
+      include: {
+        agendamentos: {
+          select: { id: true }
+        }
+      }
     });
     return {
       total: +total,

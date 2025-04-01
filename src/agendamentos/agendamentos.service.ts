@@ -3,7 +3,7 @@ import { BadRequestException, Injectable, InternalServerErrorException } from '@
 import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AppService } from 'src/app.service';
-import { Agendamento, Coordenadoria, Motivo } from '@prisma/client';
+import { Agendamento, Coordenadoria, Motivo, StatusAgendamento } from '@prisma/client';
 import * as ical from 'node-ical';
 import * as fs from 'fs';
 
@@ -77,15 +77,40 @@ export class AgendamentosService {
   async buscarTudo(
     pagina: number = 1,
     limite: number = 10,
-    busca?: string
+    busca?: string,
+    tecnico?: string,
+    motivoId?: string,
+    coordenadoriaId?: string,
+    status?: string,
+    dataInicio?: string,
+    dataFim?: string
   ): Promise<{ total: number, pagina: number, limite: number, data: Agendamento[] }> {
+    console.log({ pagina, limite, busca, tecnico, motivoId, coordenadoriaId, status, dataInicio, dataFim });
     [pagina, limite] = this.app.verificaPagina(pagina, limite);
+    let gte: Date, lte: Date;
+    if (dataInicio && dataInicio !== '' && dataFim && dataFim !== '') {
+      [gte, lte] = this.app.verificaData(dataInicio, dataFim);
+    }
+    console.log(gte, lte);
     const searchParams = {
       ...(busca && { OR: [
         { municipe: { contains: busca }},
         { rg: { contains: busca }},
-        { cpf: { contains: busca }}
-      ]})
+        { cpf: { contains: busca }},
+        { processo: { contains: busca }},
+      ]}),
+      ...(tecnico && { tecnico: {
+        OR: [
+          { nome: { contains: tecnico }},
+          { login: { contains: tecnico }}
+        ]
+      }}),
+      ...(motivoId && motivoId !== 'all' && { motivoId: motivoId }),
+      ...(coordenadoriaId && coordenadoriaId !== 'all' && { coordenadoriaId: coordenadoriaId }),
+      ...(gte && lte && {
+        dataInicio: { gte, lte }
+      }),
+      ...(status && status !== '' && { status: StatusAgendamento[status] }),
     };
     const total: number = await this.prisma.agendamento.count({ where: searchParams });
     if (total == 0) return { total: 0, pagina: 0, limite: 0, data: [] };

@@ -31,11 +31,18 @@ export class AgendamentosController {
 
   @Get('buscar-tudo')
   buscarTudo(
-      @Query('pagina')  pagina?: string,
-      @Query('limite')  limite?: string,
-      @Query('busca')   busca?:  string
+      @Query('pagina')          pagina?: string,
+      @Query('limite')          limite?: string,
+      @Query('busca')           busca?:  string,
+      @Query('tecnico')         tecnico?: string,
+      @Query('motivoId')        motivoId?: string,
+      @Query('coordenadoriaId') coordenadoriaId?: string,
+      @Query('status')          status?: string,
+      @Query('dataInicio')      dataInicio?: string,
+      @Query('dataFim')         dataFim?: string
   ) {
-    return this.agendamentosService.buscarTudo(+pagina, +limite, busca);
+    console.log({ pagina, limite, busca, tecnico, motivoId, coordenadoriaId, status, dataInicio, dataFim });
+    return this.agendamentosService.buscarTudo(+pagina, +limite, busca, tecnico, motivoId, coordenadoriaId, status, dataInicio, dataFim);
   }
 
   @Get('buscar-por-id/:id')
