@@ -11,6 +11,8 @@ import { CoordenadoriasService } from 'src/coordenadorias/coordenadorias.service
 import { UsuariosService } from 'src/usuarios/usuarios.service';
 import { TestingModule, Test } from '@nestjs/testing';
 import { PrismaService } from 'src/prisma/prisma.service';
+import fs from 'fs'
+import ical from 'node-ical'
 
 describe('Agendamento.service Testes', () => {
     let service: AgendamentosService;
@@ -396,93 +398,51 @@ describe('Agendamento.service Testes', () => {
         });
     });
 
-    // it('teste de mock fs', async () => {
-    //     const file = require('./__mocks__/fs');
-    //     const fileSumary = file.summarizeFilesInDirectorySync('/path/to');
-    //     expect(fileSumary.length).toBe(2);
-    // });
+    it('deve processar um arquivo ICS fictício', async () => {
+        // 1. Cria um arquivo fake (não existe fisicamente)
+        const arquivoFake = {
+            path: '/caminho/ficticio.ics',
+            originalname: 'fake.ics',
+        } as Express.Multer.File;
 
-    // it('teste minimalista do parseFile', async () => {
-    //     const ical = require('node-ical');
-    //     const result = ical.sync.parseFile('/caminho/ficticio.ics');
-    //     console.log('Resultado do mock:', result);
-    //     expect(result).toBeDefined();
-    // });
+        // 2. Mocka o fs para simular a leitura do arquivo
+        const dadosFakeICS = `
+          BEGIN:VCALENDAR
+          BEGIN:VEVENT
+          SUMMARY:Reunião CT - Motivo Importante
+          DTSTART:20240101T100000Z
+          DTEND:20240101T110000Z
+          END:VEVENT
+          END:VCALENDAR
+        `;
 
-    // //importar arquivos .ICS
+        (fs.readFileSync as jest.Mock).mockReturnValue(dadosFakeICS);
 
-    // it('deverá importar arquivos .ICS', async () => {
-    //     const mockFile = {
-    //         path: '/qualquer/caminho.ics',
-    //         originalname: 'teste.ics',
-    //         mimetype: 'text/calendar',
-    //         size: 1024,
-    //     } as Express.Multer.File;
+        // 3. Mocka o ical para retornar eventos processados
+        (ical.sync.parseFile as jest.Mock).mockReturnValue({
+            'evento1': {
+                type: 'VEVENT',
+                summary: 'Reunião CT - Motivo Importante',
+                start: new Date('2024-01-01T10:00:00Z'),
+                end: new Date('2024-01-01T11:00:00Z')
+            }
+        });
 
-    //     const mockCoordenadorias = [
-    //         {
-    //             id: 'coord-1',
-    //             sigla: 'CT',
-    //             status: true,
-    //             criadoEm: new Date(),
-    //             atualizadoEm: new Date(),
-    //         },
-    //         {
-    //             id: 'coord-2',
-    //             sigla: 'ST',
-    //             status: true,
-    //             criadoEm: new Date(),
-    //             atualizadoEm: new Date(),
-    //         },
-    //     ] as Coordenadoria[];
+        // 4. Mocka o Prisma para retornar dados de coordenadorias/motivos
+        MockPrismaService.coordenadoria.findMany.mockResolvedValue([
+            { id: '1', sigla: 'CT' }
+        ]);
+        MockPrismaService.motivo.findMany.mockResolvedValue([
+            { id: '2', texto: 'Motivo Importante' }
+        ]);
 
-    //     const mockMotivos = [
-    //         {
-    //             id: 'motivo-1',
-    //             texto: 'Reunião',
-    //             status: true,
-    //             criadoEm: new Date(),
-    //             atualizadoEm: new Date(),
-    //         },
-    //         {
-    //             id: 'motivo-2',
-    //             texto: 'Atendimento',
-    //             status: true,
-    //             criadoEm: new Date(),
-    //             atualizadoEm: new Date(),
-    //         },
-    //     ] as Motivo[];
+        // 5. Executa o teste
+        const resultado = await service.importarICS(arquivoFake);
 
-    //     (prisma.coordenadoria.findMany as jest.Mock).mockResolvedValue(mockCoordenadorias);
-    //     (prisma.motivo.findMany as jest.Mock).mockResolvedValue(mockMotivos);
-    //     (prisma.agendamento.createMany as jest.Mock).mockResolvedValue({ count: 2 });
+        // 6. Verificações
+        expect(fs.readFileSync).toHaveBeenCalledWith('/caminho/ficticio.ics');
+        expect(MockPrismaService.agendamento.createMany).toHaveBeenCalled();
+        expect(resultado.count).toBe(1); // Supondo que 1 evento foi criado
+    });
 
-    //     const result = await service.importarICS(mockFile);
-
-    //     expect(result).not.toBe(null);
-    //     expect(result).toEqual({ count: 2 });
-    //     // expect(ical.sync.parseFile).toHaveBeenCalledWith(mockFile.path);
-    //     expect(prisma.agendamento.createMany).toHaveBeenCalledWith({
-    //         data: [
-    //             {
-    //                 resumo: 'Evento CT - Reunião importante',
-    //                 dataInicio: new Date('2025-03-01T10:00:00'),
-    //                 dataFim: new Date('2025-03-01T11:00:00'),
-    //                 coordenadoriaId: 'coord-1',
-    //                 motivoId: 'motivo-1',
-    //                 importado: true,
-    //                 legado: true,
-    //             },
-    //             {
-    //                 resumo: 'ST - Atendimento técnico',
-    //                 dataInicio: new Date('2025-03-02T14:00:00'),
-    //                 dataFim: new Date('2025-03-02T15:00:00'),
-    //                 coordenadoriaId: 'coord-2',
-    //                 motivoId: 'motivo-2',
-    //                 importado: true,
-    //                 legado: true,
-    //             },
-    //         ],
-    //     });
-    // });
 });
