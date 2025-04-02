@@ -9,7 +9,7 @@ import {
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { $Enums, Usuario } from '@prisma/client';
+import { $Enums, Permissao, Usuario } from '@prisma/client';
 import { AppService } from 'src/app.service';
 import { Client as LdapClient } from 'ldapts';
 import { BuscarNovoResponseDTO, UsuarioAutorizadoResponseDTO, UsuarioPaginadoResponseDTO, UsuarioResponseDTO } from './dto/usuario-response.dto';
@@ -83,11 +83,11 @@ export class UsuariosService {
   }
 
   async buscarTudo(
-    usuario: Usuario = null,
     pagina: number = 1,
     limite: number = 10,
-    status: number = 1,
-    busca?: string
+    busca?: string,
+    status?: string,
+    permissao?: string
   ): Promise<UsuarioPaginadoResponseDTO> {
     [pagina, limite] = this.app.verificaPagina(pagina, limite);
     const searchParams = {
@@ -97,6 +97,10 @@ export class UsuariosService {
         { login: { contains: busca }},
         { email: { contains: busca }},
       ]}),
+      ...(status && status !== '' && { 
+        status: status === 'ATIVO' ? true : (status === 'INATIVO' ? false : undefined) 
+      }),
+      ...(permissao && permissao !== '' && { permissao: Permissao[permissao] }),
     };
     const total: number = await this.prisma.usuario.count({ where: searchParams });
     if (total == 0) return { total: 0, pagina: 0, limite: 0, data: [] };

@@ -35,13 +35,13 @@ export class UsuariosController {
   @Permissoes('ADM')
   @Get('buscar-tudo')
   buscarTudo(
-    @UsuarioAtual() usuario: Usuario,
     @Query('pagina') pagina?: string,
     @Query('limite') limite?: string,
+    @Query('busca') busca?: string,
     @Query('status') status?: string,
-    @Query('busca') busca?: string
+    @Query('permissao') permissao?: string,
   ): Promise<UsuarioPaginadoResponseDTO> {
-    return this.usuariosService.buscarTudo(usuario, +pagina, +limite, +status, busca);
+    return this.usuariosService.buscarTudo(+pagina, +limite, busca, status, permissao);
   }
 
   @Permissoes('ADM')
