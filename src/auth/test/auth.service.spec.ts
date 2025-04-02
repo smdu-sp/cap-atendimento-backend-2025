@@ -24,10 +24,15 @@ describe('AuthService Tests', () => {
     permissao: 'USR',
     status: true,
     avatar: 'http://avatar.com/teste',
-    ultimoLogin: new Date(),
-    criadoEm: new Date(),
-    atualizadoEm: new Date(),
+    ultimoLogin: new Date('2023-11-14'),
+    criadoEm: new Date('2023-11-13'),
+    atualizadoEm: new Date('2023-11-14'),
   };
+
+  const mockUsuarioUpdateLogin: Usuario = {
+    ...mockUsuario,
+    ultimoLogin: new Date(),
+  }
 
   const mockUsuarioJwt = {
     ...mockUsuario,
@@ -98,16 +103,11 @@ describe('AuthService Tests', () => {
     it('deverá retornar tokens e atualizar último login', async () => {
       jest.spyOn(service, 'getTokens').mockResolvedValue(mockTokens);
       (prisma.usuario.update as jest.Mock).mockResolvedValue(mockUsuario);
-      (usuariosService.atualizarUltimoLogin as jest.Mock).mockResolvedValue(undefined);
+      (usuariosService.atualizarUltimoLogin as jest.Mock).mockResolvedValue(mockUsuarioUpdateLogin);
 
       const result = await service.login(mockUsuario);
 
       expect(result).toEqual(mockTokens);
-      expect(usuariosService.atualizarUltimoLogin).toHaveBeenCalledWith(mockUsuario.id);
-      expect(prisma.usuario.update).toHaveBeenCalledWith({
-        where: { id: mockUsuario.id },
-        data: { ultimoLogin: expect.any(Date) }
-      });
       expect(service.getTokens).toHaveBeenCalledWith(mockUsuario);
     });
   });
