@@ -38,11 +38,9 @@ export class AgendamentosController {
       @Query('motivoId')        motivoId?: string,
       @Query('coordenadoriaId') coordenadoriaId?: string,
       @Query('status')          status?: string,
-      @Query('dataInicio')      dataInicio?: string,
-      @Query('dataFim')         dataFim?: string
+      @Query('periodo')         periodo?: string
   ) {
-    console.log({ pagina, limite, busca, tecnico, motivoId, coordenadoriaId, status, dataInicio, dataFim });
-    return this.agendamentosService.buscarTudo(+pagina, +limite, busca, tecnico, motivoId, coordenadoriaId, status, dataInicio, dataFim);
+    return this.agendamentosService.buscarTudo(+pagina, +limite, busca, tecnico, motivoId, coordenadoriaId, status, periodo);
   }
 
   @Get('buscar-por-id/:id')
@@ -71,10 +69,9 @@ export class AgendamentosController {
   async dashboard(
     @Query('motivoId') motivoId?: string,
     @Query('coordenadoriaId') coordenadoriaId?: string,
-    @Query('dataInicio') dataInicio?: string,
-    @Query('dataFim') dataFim?: string,
+    @Query('periodo')         periodo?: string
   ) {
-    return await this.agendamentosService.dashboard(motivoId, coordenadoriaId, dataInicio, dataFim);
+    return await this.agendamentosService.dashboard(motivoId, coordenadoriaId, periodo);
   }
 }
 

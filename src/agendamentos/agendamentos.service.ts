@@ -82,16 +82,15 @@ export class AgendamentosService {
     motivoId?: string,
     coordenadoriaId?: string,
     status?: string,
-    dataInicio?: string,
-    dataFim?: string
+    periodo?: string
   ): Promise<{ total: number, pagina: number, limite: number, data: Agendamento[] }> {
-    console.log({ pagina, limite, busca, tecnico, motivoId, coordenadoriaId, status, dataInicio, dataFim });
-    [pagina, limite] = this.app.verificaPagina(pagina, limite);
     let gte: Date, lte: Date;
-    if (dataInicio && dataInicio !== '' && dataFim && dataFim !== '') {
-      [gte, lte] = this.app.verificaData(dataInicio, dataFim);
+    if(periodo && periodo !== ''){
+      const datas = periodo.split(',');
+      if (datas.length === 1) datas.push(datas[0]);
+      [gte, lte] = this.app.verificaData(datas[0], datas[1]);
     }
-    console.log(gte, lte);
+    [pagina, limite] = this.app.verificaPagina(pagina, limite);
     const searchParams = {
       ...(busca && { OR: [
         { municipe: { contains: busca }},
@@ -211,11 +210,14 @@ export class AgendamentosService {
   async dashboard(
     motivoId?: string,
     coordenadoriaId?: string,
-    dataInicio?: string,
-    dataFim?: string
+    periodo?: string,
   ) {
-    const gte = (dataInicio && dataFim) && (dataInicio !== '' && dataFim !== '') ? new Date(dataInicio) : undefined;
-    const lte = (dataInicio && dataFim) && (dataInicio !== '' && dataFim !== '') ? new Date(dataFim) : undefined;
+    let gte: Date, lte: Date;
+    if(periodo && periodo !== ''){
+      const datas = periodo.split(',');
+      if (datas.length === 1) datas.push(datas[0]);
+      [gte, lte] = this.app.verificaData(datas[0], datas[1]);
+    }
     const agendamentosFiltrados = await this.prisma.agendamento.findMany({
       where: {
         dataInicio: { gte, lte },
