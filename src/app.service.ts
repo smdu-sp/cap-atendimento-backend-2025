@@ -37,7 +37,6 @@ export class AppService {
 
   verificaLimite(pagina: number, limite: number, total: number) {
     if ((pagina - 1) * limite >= total) pagina = Math.ceil(total / limite);
-    if (limite > total) limite = total;
     return [pagina, limite];
   }
 
