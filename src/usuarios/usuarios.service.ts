@@ -132,6 +132,7 @@ export class UsuariosService {
     return await this.prisma.usuario.findUnique({ where: { login }});
   }
 
+
   async atualizar(
     usuario: Usuario,
     id: string,
@@ -143,6 +144,7 @@ export class UsuariosService {
       if (usuario && usuario.id !== id) throw new ForbiddenException('Login já cadastrado.');
     }
     const usuarioAntes = await this.prisma.usuario.findUnique({ where: { id }});
+    if (['TEC', 'USR'].includes(usuarioAntes.permissao) && id !== usuarioAntes.id) throw new ForbiddenException('Operação não autorizada para este usuário.');
     let { permissao } = updateUsuarioDto;
     permissao = permissao && permissao.toString() !== '' ? this.validaPermissaoCriador(permissao, usuarioLogado.permissao) : usuarioAntes.permissao;
     const usuarioAtualizado: Usuario = await this.prisma.usuario.update({

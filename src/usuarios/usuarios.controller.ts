@@ -50,7 +50,7 @@ export class UsuariosController {
     return this.usuariosService.buscarPorId(id);
   }
 
-  @Permissoes('ADM')
+  @Permissoes('ADM', 'TEC', 'USR')
   @Patch('atualizar/:id')
   atualizar(
     @UsuarioAtual() usuario: Usuario,
