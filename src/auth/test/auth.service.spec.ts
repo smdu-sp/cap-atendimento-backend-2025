@@ -32,7 +32,7 @@ describe('AuthService Tests', () => {
   const mockUsuarioUpdateLogin: Usuario = {
     ...mockUsuario,
     ultimoLogin: new Date(),
-  }
+  };
 
   const mockUsuarioJwt = {
     ...mockUsuario,
@@ -62,8 +62,12 @@ describe('AuthService Tests', () => {
         {
           provide: AppService,
           useValue: {
-            verificaPagina: jest.fn().mockImplementation((pagina, limite) => [pagina, limite]),
-            verificaLimite: jest.fn().mockImplementation((pagina, limite, total) => [pagina, limite]),
+            verificaPagina: jest
+              .fn()
+              .mockImplementation((pagina, limite) => [pagina, limite]),
+            verificaLimite: jest
+              .fn()
+              .mockImplementation((pagina, limite, total) => [pagina, limite]),
           },
         },
         {
@@ -76,7 +80,8 @@ describe('AuthService Tests', () => {
         {
           provide: JwtService,
           useValue: {
-            signAsync: jest.fn()
+            signAsync: jest
+              .fn()
               .mockResolvedValueOnce('mock_access_token')
               .mockResolvedValueOnce('mock_refresh_token'),
           },
@@ -99,83 +104,87 @@ describe('AuthService Tests', () => {
     expect(app).toBeDefined();
   });
 
-  describe('login', () => {
-    it('deverá retornar tokens e atualizar último login', async () => {
-      jest.spyOn(service, 'getTokens').mockResolvedValue(mockTokens);
-      (prisma.usuario.update as jest.Mock).mockResolvedValue(mockUsuario);
-      (usuariosService.atualizarUltimoLogin as jest.Mock).mockResolvedValue(mockUsuarioUpdateLogin);
+  it('deverá retornar tokens e atualizar último login', async () => {
+    jest.spyOn(service, 'getTokens').mockResolvedValue(mockTokens);
+    (prisma.usuario.update as jest.Mock).mockResolvedValue(mockUsuario);
+    (usuariosService.atualizarUltimoLogin as jest.Mock).mockResolvedValue(
+      mockUsuarioUpdateLogin,
+    );
 
-      const result = await service.login(mockUsuario);
+    const result = await service.login(mockUsuario);
 
-      expect(result).toEqual(mockTokens);
-      expect(service.getTokens).toHaveBeenCalledWith(mockUsuario);
-    });
+    expect(result).toEqual(mockTokens);
+    expect(service.getTokens).toHaveBeenCalledWith(mockUsuario);
   });
 
-  describe('refresh', () => {
-    it('deverá retornar novos tokens', async () => {
-      jest.spyOn(service, 'getTokens').mockResolvedValue(mockTokens);
+  it('deverá retornar novos tokens', async () => {
+    jest.spyOn(service, 'getTokens').mockResolvedValue(mockTokens);
 
-      const result = await service.refresh(mockUsuario);
+    const result = await service.refresh(mockUsuario);
 
-      expect(result).toEqual(mockTokens);
-      expect(service.getTokens).toHaveBeenCalledWith(mockUsuario);
-    });
+    expect(result).toEqual(mockTokens);
+    expect(service.getTokens).toHaveBeenCalledWith(mockUsuario);
   });
 
-  describe('getTokens', () => {
-    it('deverá gerar tokens com payload correto', async () => {
-      process.env.JWT_SECRET = 'test_secret';
-      process.env.RT_SECRET = 'test_rt_secret';
-      
-      const signAsyncSpy = jest.spyOn(jwtService, 'signAsync')
-        .mockResolvedValueOnce('mock_access_token')
-        .mockResolvedValueOnce('mock_refresh_token');
+  it('deverá gerar tokens com payload correto', async () => {
+    process.env.JWT_SECRET = 'test_secret';
+    process.env.RT_SECRET = 'test_rt_secret';
 
-      const result = await service.getTokens(mockUsuarioJwt);
-      
-      expect(result).toEqual(mockTokens);
-      expect(signAsyncSpy).toHaveBeenNthCalledWith(1,
-        expect.objectContaining({
-          sub: mockUsuario.id,
-          login: mockUsuario.login
-        }),
-        {
-          expiresIn: '15m',
-          secret: 'test_secret'
-        }
-      );
-      expect(signAsyncSpy).toHaveBeenNthCalledWith(2,
-        expect.objectContaining({
-          sub: mockUsuario.id
-        }),
-        {
-          expiresIn: '7d',
-          secret: 'test_rt_secret'
-        }
-      );
-    });
+    const signAsyncSpy = jest
+      .spyOn(jwtService, 'signAsync')
+      .mockResolvedValueOnce('mock_access_token')
+      .mockResolvedValueOnce('mock_refresh_token');
+
+    const result = await service.getTokens(mockUsuarioJwt);
+
+    expect(result).toEqual(mockTokens);
+    expect(signAsyncSpy).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        sub: mockUsuario.id,
+        login: mockUsuario.login,
+      }),
+      {
+        expiresIn: '15m',
+        secret: 'test_secret',
+      },
+    );
+    expect(signAsyncSpy).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        sub: mockUsuario.id,
+      }),
+      {
+        expiresIn: '7d',
+        secret: 'test_rt_secret',
+      },
+    );
   });
 
-  describe('validateUser', () => {
-    it('deverá validar usuário local em ambiente de desenvolvimento', async () => {
-      process.env.ENVIRONMENT = 'local';
-      (usuariosService.buscarPorLogin as jest.Mock).mockResolvedValue(mockUsuario);
+  it('deverá validar usuário local em ambiente de desenvolvimento', async () => {
+    process.env.ENVIRONMENT = 'local';
+    (usuariosService.buscarPorLogin as jest.Mock).mockResolvedValue(
+      mockUsuario,
+    );
 
-      const result = await service.validateUser(mockUsuario.login, 'any_password');
+    const result = await service.validateUser(
+      mockUsuario.login,
+      'any_password',
+    );
 
-      expect(result).toEqual(mockUsuario);
-      expect(usuariosService.buscarPorLogin).toHaveBeenCalledWith(mockUsuario.login);
+    expect(result).toEqual(mockUsuario);
+    expect(usuariosService.buscarPorLogin).toHaveBeenCalledWith(
+      mockUsuario.login,
+    );
 
-      delete process.env.ENVIRONMENT;
-    });
+    delete process.env.ENVIRONMENT;
+  });
 
-    it('deverá rejeitar usuário não encontrado', async () => {
-      (usuariosService.buscarPorLogin as jest.Mock).mockResolvedValue(null);
+  it('deverá rejeitar usuário não encontrado', async () => {
+    (usuariosService.buscarPorLogin as jest.Mock).mockResolvedValue(null);
 
-      await expect(
-        service.validateUser('invalid_login', 'any_password'),
-      ).rejects.toThrow('Credenciais incorretas.');
-    });
+    await expect(
+      service.validateUser('invalid_login', 'any_password'),
+    ).rejects.toThrow('Credenciais incorretas.');
   });
 });
