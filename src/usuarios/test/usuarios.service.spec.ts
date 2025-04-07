@@ -43,7 +43,6 @@ describe('Usuarios.service testes unitários', () => {
     unbind: jest.fn()
   }
 
-  // Mock do LDAP Client
   const mockLdapBind = jest.fn();
   const mockLdapSearch = jest.fn();
   const mockLdapUnbind = jest.fn();
@@ -569,6 +568,8 @@ describe('Usuarios.service testes unitários', () => {
     );
   });
 
+  //buscar novo erro
+
   it('deverá lançar erro ao falhar conexão LDAP', async () => {
     mockLdapBind.mockRejectedValue(new Error('Erro de conexão'));
 
@@ -597,6 +598,8 @@ describe('Usuarios.service testes unitários', () => {
       email: 'novo@example.com'
     });
   });
+
+  //buscar user inativo
 
   it('deverá reativar usuario existente inativo', async () => {
     const mockUsuarioInativo: UsuarioResponseDTO = {
@@ -631,6 +634,8 @@ describe('Usuarios.service testes unitários', () => {
     }));
   });
 
+  //reativar user
+
   it('deverá lançar erro ao não encontrar usuário no LDAP', async () => {
     mockLdapBind.mockResolvedValue(undefined);
     mockLdapSearch.mockRejectedValue(new Error('Não encontrado'));
@@ -639,6 +644,8 @@ describe('Usuarios.service testes unitários', () => {
     await expect(service.buscarNovo('inexistente'))
       .rejects.toThrow(InternalServerErrorException);
   });
+
+  //user não encontrado
 
   it('deverá lançar erro se usuário não encontrado no LDAP', async () => {
     mockLdapBind.mockResolvedValue(undefined);
