@@ -1,6 +1,5 @@
 import { CreateUsuarioDto } from '../dto/create-usuario.dto';
 import { UpdateUsuarioDto } from '../dto/update-usuario.dto';
-// import { AppService } from 'src/app.service';
 import { UsuarioResponseDTO } from '../dto/usuario-response.dto';
 import { AppService } from 'src/app.service';
 import { SguService } from 'src/prisma/sgu.service';
@@ -9,8 +8,8 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { $Enums, Usuario } from '@prisma/client';
 import { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
-import exp from 'constants';
-
+import { InternalServerErrorException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Client as LdapClient } from 'ldapts';
 
 describe('Usuarios.service testes unitários', () => {
   let service: UsuariosService;
@@ -38,8 +37,30 @@ describe('Usuarios.service testes unitários', () => {
       .mockImplementation((pagina, limite, total) => [pagina, limite]),
   };
 
+  const mockLdapService = {
+    bind: jest.fn(),
+    search: jest.fn(),
+    unbind: jest.fn()
+  }
+
+  // Mock do LDAP Client
+  const mockLdapBind = jest.fn();
+  const mockLdapSearch = jest.fn();
+  const mockLdapUnbind = jest.fn();
+
+
+
   beforeEach(async () => {
     jest.clearAllMocks();
+
+    mockLdapBind.mockReset();
+    mockLdapSearch.mockReset();
+    mockLdapUnbind.mockReset();
+
+    jest.spyOn(LdapClient.prototype, 'bind').mockImplementation(mockLdapBind);
+    jest.spyOn(LdapClient.prototype, 'search').mockImplementation(mockLdapSearch);
+    jest.spyOn(LdapClient.prototype, 'unbind').mockImplementation(mockLdapUnbind);
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsuariosService,
@@ -522,16 +543,109 @@ describe('Usuarios.service testes unitários', () => {
   })
 
   //buscar por nome
-
   it('deverá buscar um usuario pelo nome', async () => {
+    const mockLdapResponse = {
+      searchEntries: [{
+        name: 'João Silva',
+        mail: 'joao.silva@example.com',
+        samaccountname: 'joao.silva'
+      }]
+    };
 
-  })
+    mockLdapBind.mockResolvedValue(undefined);
+    mockLdapSearch.mockResolvedValue(mockLdapResponse);
+
+    const result = await service.buscarPorNome('João Silva');
+
+    expect(result).toEqual({
+      nome: 'João Silva',
+      email: 'joao.silva@example.com',
+      login: 'joao.silva'
+    });
+
+    expect(mockLdapBind).toHaveBeenCalledWith(
+      `${process.env.USER_LDAP}${process.env.LDAP_DOMAIN}`,
+      process.env.PASS_LDAP
+    );
+  });
+
+  it('deverá lançar erro ao falhar conexão LDAP', async () => {
+    mockLdapBind.mockRejectedValue(new Error('Erro de conexão'));
+
+    await expect(service.buscarPorNome('Nome Inválido'))
+      .rejects.toThrow(InternalServerErrorException);
+  });
 
   //buscar novo
+  it('deverá buscar um novo usuario via LDAP', async () => {
+    const mockLdapResponse = {
+      searchEntries: [{
+        name: 'Novo Usuário',
+        mail: 'novo@example.com'
+      }]
+    };
 
-  it('deverá buscar um novo usuario', async () => {
+    mockLdapBind.mockResolvedValue(undefined);
+    mockLdapSearch.mockResolvedValue(mockLdapResponse);
+    jest.spyOn(service, 'buscarPorLogin').mockResolvedValue(null);
 
-  })
+    const result = await service.buscarNovo('novousuario');
 
+    expect(result).toEqual({
+      login: 'novousuario',
+      nome: 'Novo Usuário',
+      email: 'novo@example.com'
+    });
+  });
 
+  it('deverá reativar usuario existente inativo', async () => {
+    const mockUsuarioInativo: UsuarioResponseDTO = {
+      id: '1',
+      nome: 'Usuário Inativo',
+      login: 'usuarioexistente',
+      email: 'inativo@example.com',
+      status: false,
+      avatar: 'avatar-inativo.png',
+      permissao: $Enums.Permissao.USR,
+      ultimoLogin: new Date('2024-01-01'),
+      criadoEm: new Date('2024-01-01'),
+      atualizadoEm: new Date('2024-01-01'),
+      nomeSocial: undefined
+    };
+
+    jest.spyOn(service, 'buscarPorLogin').mockResolvedValue(mockUsuarioInativo);
+
+    const mockUsuarioReativado = { ...mockUsuarioInativo, status: true };
+    MockPrismaService.usuario.update.mockResolvedValue(mockUsuarioReativado);
+
+    const result = await service.buscarNovo('usuarioexistente');
+
+    expect(prisma.usuario.update).toHaveBeenCalledWith({
+      where: { id: '1' },
+      data: { status: true }
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      login: 'usuarioexistente',
+      status: true
+    }));
+  });
+
+  it('deverá lançar erro ao não encontrar usuário no LDAP', async () => {
+    mockLdapBind.mockResolvedValue(undefined);
+    mockLdapSearch.mockRejectedValue(new Error('Não encontrado'));
+    jest.spyOn(service, 'buscarPorLogin').mockResolvedValue(null);
+
+    await expect(service.buscarNovo('inexistente'))
+      .rejects.toThrow(InternalServerErrorException);
+  });
+
+  it('deverá lançar erro se usuário não encontrado no LDAP', async () => {
+    mockLdapBind.mockResolvedValue(undefined);
+    mockLdapSearch.mockResolvedValue({ searchEntries: [] });
+    jest.spyOn(service, 'buscarPorLogin').mockResolvedValue(null);
+
+    await expect(service.buscarNovo('invalidlogin'))
+      .rejects.toThrow(InternalServerErrorException);
+  });
 });
