@@ -15,19 +15,34 @@ import { IsPublic } from './decorators/is-public.decorator';
 import { UsuarioAtual } from './decorators/usuario-atual.decorator';
 import { Usuario } from '@prisma/client';
 import { RefreshAuthGuard } from './guards/refresh.guard';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { UsuarioToken } from './models/UsuarioToken';
 import { LoginDto } from './models/login.dto';
 import { EuResponseDTO } from './models/eu-response.dto';
+import { UsuariosService } from 'src/usuarios/usuarios.service';
+import { UsuarioResponseDTO } from 'src/usuarios/dto/usuario-response.dto';
 
 @ApiBearerAuth()
 @ApiTags('Auth')
 @Controller()
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usuariosService: UsuariosService
+  ) {}
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiBody({
+    description: 'Senha e login para autenticação por JWT.',
+    type: LoginDto,
+  })
   @UseGuards(LocalAuthGuard)
   @IsPublic()
   login(@Request() req: AuthRequest): Promise<UsuarioToken> {
@@ -43,7 +58,12 @@ export class AuthController {
   }
 
   @Get('eu')
+  @ApiResponse({
+    status: 200,
+    description: 'Retorna 200 se o sistema encontrar o usuário logado.',
+    type: UsuarioResponseDTO,
+  })
   usuarioAtual(@UsuarioAtual() usuario: Usuario) {
-    return usuario;
+    return this.usuariosService.buscarPorId(usuario.id);
   }
 }

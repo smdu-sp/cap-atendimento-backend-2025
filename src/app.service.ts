@@ -3,6 +3,30 @@ import { Global, Injectable } from '@nestjs/common';
 @Global()
 @Injectable()
 export class AppService {
+  verificaData(dataInicio: string, dataFim: string): [Date, Date] {
+    let inicio: Date, fim: Date;
+    if (!dataInicio) inicio = new Date();
+    else {
+      var dataSeparada = dataInicio.split('-');
+      inicio = new Date(
+        +dataSeparada[2],
+        +dataSeparada[1] - 1,
+        +dataSeparada[0],
+        0, 0, 0
+      )
+    }
+    if (!dataFim) fim = new Date();
+    else {
+      var dataSeparada = dataFim.split('-');
+      fim = new Date(
+        +dataSeparada[2],
+        +dataSeparada[1] - 1,
+        +dataSeparada[0],
+        23, 59, 59, 999
+      )
+    }
+    return [inicio, fim];
+  }
   verificaPagina(pagina: number, limite: number) {
     if (!pagina) pagina = 1;
     if (!limite) limite = 10;
@@ -13,7 +37,6 @@ export class AppService {
 
   verificaLimite(pagina: number, limite: number, total: number) {
     if ((pagina - 1) * limite >= total) pagina = Math.ceil(total / limite);
-    if (limite > total) limite = total;
     return [pagina, limite];
   }
 

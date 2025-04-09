@@ -1,6 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger"
 import { IsDate, IsString, Length, MaxLength, MinLength, minLength } from "class-validator"
 
+
 export class CreateAgendamentoDto {
     @ApiProperty()
     @IsString()
@@ -32,4 +33,8 @@ export class CreateAgendamentoDto {
     @ApiProperty()
     @IsDate()
     dataFim: Date
+    @ApiProperty()
+    @IsString()
+    resumo?: string
+
 }

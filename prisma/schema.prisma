@@ -10,12 +10,20 @@ datasource db {
 enum Permissao {
   DEV
   ADM
+  TEC
   USR
+}
+
+enum StatusAgendamento {
+  AGENDADO
+  CANCELADO
+  CONCLUIDO
 }
 
 model Usuario {
   id            String    @id @default(uuid())
   nome          String
+  nomeSocial    String?
   login         String    @unique
   email         String    @unique
   permissao     Permissao @default(USR)
@@ -32,27 +40,29 @@ model Usuario {
 }
 
 model Agendamento {
-  id              String          @id @default(uuid())
+  id              String            @id @default(uuid())
   municipe        String?
   rg              String?
   cpf             String?
   processo        String?
   dataInicio      DateTime
   dataFim         DateTime
-  importado       Boolean         @default(false)
-  legado          Boolean         @default(false)
-  resumo          String?         @db.Text
+  importado       Boolean           @default(false)
+  legado          Boolean           @default(false)
+  resumo          String?           @db.Text
   motivoId        String?
   coordenadoriaId String?
   tecnicoId       String?
+  email           String?
+  status          StatusAgendamento @default(AGENDADO)
 
-  criadoEm        DateTime        @default(now())
-  atualizadoEm    DateTime        @default(now()) @updatedAt
+  criadoEm        DateTime          @default(now())
+  atualizadoEm    DateTime          @default(now()) @updatedAt
 
-  motivo          Motivo?         @relation(fields: [motivoId], references: [id], onDelete: NoAction)
-  coordenadoria   Coordenadoria?  @relation(fields: [coordenadoriaId], references: [id], onDelete: NoAction)
-  tecnico         Usuario?        @relation(fields: [tecnicoId], references: [id], onDelete: NoAction)
-  
+  motivo          Motivo?           @relation(fields: [motivoId], references: [id], onDelete: NoAction)
+  coordenadoria   Coordenadoria?    @relation(fields: [coordenadoriaId], references: [id], onDelete: NoAction)
+  tecnico         Usuario?          @relation(fields: [tecnicoId], references: [id], onDelete: NoAction)
+
   @@map("agendamentos")
 }
 

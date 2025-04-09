@@ -23,9 +23,10 @@ export class MotivosController {
   buscarTudo(
     @Query('pagina')  pagina?: string,
     @Query('limite')  limite?: string,
+    @Query('status')  status?: string,
     @Query('busca')   busca?:  string
   ) {
-    return this.motivosService.buscarTudo(+pagina, +limite, busca);
+    return this.motivosService.buscarTudo(+pagina, +limite, status, busca);
   }
 
   @Get('buscar-por-id/:id')

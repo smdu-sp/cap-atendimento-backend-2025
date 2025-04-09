@@ -7,10 +7,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { ValidarLoginMiddleware } from './middlewares/validar-login.middleware';
 import { RtStrategy } from './strategies/rt.strategy';
+import { UsuariosService } from 'src/usuarios/usuarios.service';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, RtStrategy],
+  providers: [AuthService, UsuariosService, LocalStrategy, JwtStrategy, RtStrategy],
   imports: [
     UsuariosModule,
     JwtModule.register({

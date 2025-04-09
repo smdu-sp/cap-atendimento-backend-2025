@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Body, Param, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { AgendamentosService } from './agendamentos.service';
 import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
+import { ImportICSDto } from './dto/importICS.dto';
 import { Permissoes } from 'src/auth/decorators/permissoes.decorator';
 import { AgendamentosInterceptor } from './interceptors/agendamentos.interceptor';
 import { IsPublic } from 'src/auth/decorators/is-public.decorator';
+import { ApiBody, ApiConsumes } from '@nestjs/swagger';
 
 @Controller('agendamentos')
 export class AgendamentosController {
@@ -20,13 +22,25 @@ export class AgendamentosController {
     return this.agendamentosService.listaCompleta();
   }
 
+  @Get('hoje')
+  agendaDiaria(
+    @Query('busca') busca?:  string
+  ) {
+    return this.agendamentosService.agendaDiaria(busca);
+  }
+
   @Get('buscar-tudo')
   buscarTudo(
-      @Query('pagina')  pagina?: string,
-      @Query('limite')  limite?: string,
-      @Query('busca')   busca?:  string
+      @Query('pagina')          pagina?: string,
+      @Query('limite')          limite?: string,
+      @Query('busca')           busca?:  string,
+      @Query('tecnico')         tecnico?: string,
+      @Query('motivoId')        motivoId?: string,
+      @Query('coordenadoriaId') coordenadoriaId?: string,
+      @Query('status')          status?: string,
+      @Query('periodo')         periodo?: string
   ) {
-    return this.agendamentosService.buscarTudo(+pagina, +limite, busca);
+    return this.agendamentosService.buscarTudo(+pagina, +limite, busca, tecnico, motivoId, coordenadoriaId, status, periodo);
   }
 
   @Get('buscar-por-id/:id')
@@ -34,18 +48,30 @@ export class AgendamentosController {
     return this.agendamentosService.buscarPorId(id);
   }
 
-  @IsPublic()
+  @Patch('atualizar/:id')
+  atualizar(
+    @Param('id') id: string,
+    @Body() updateAgendamentoDto: Partial<CreateAgendamentoDto>
+  ) {
+    return this.agendamentosService.atualizar(id, updateAgendamentoDto);
+  }
+
+  @ApiBody({description:'arquivo de extensão .ics para importação de dados', type: ImportICSDto})
+  @ApiConsumes('multipart/form-data')
   @Post('importar')
   @UseInterceptors(AgendamentosInterceptor)
   async importarICS(@UploadedFile() arquivo: Express.Multer.File) {
     return await this.agendamentosService.importarICS(arquivo);
   }
-
-  @IsPublic()
-  @Get('buscar')
+  
+  @Get('dashboard')
   @UseInterceptors(AgendamentosInterceptor)
-  async buscar(@Query('busca') busca: string) {
-    return await this.agendamentosService.buscar(busca);
+  async dashboard(
+    @Query('motivoId') motivoId?: string,
+    @Query('coordenadoriaId') coordenadoriaId?: string,
+    @Query('periodo')         periodo?: string
+  ) {
+    return await this.agendamentosService.dashboard(motivoId, coordenadoriaId, periodo);
   }
 }
 

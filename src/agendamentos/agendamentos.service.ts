@@ -38,8 +38,19 @@ export class AgendamentosService {
   async buscarTudo(
     pagina: number = 1,
     limite: number = 10,
-    busca?: string
+    busca?: string,
+    tecnico?: string,
+    motivoId?: string,
+    coordenadoriaId?: string,
+    status?: string,
+    periodo?: string
   ): Promise<{ total: number, pagina: number, limite: number, data: Agendamento[] }> {
+    let gte: Date, lte: Date;
+    if (periodo && periodo !== '') {
+      const datas = periodo.split(',');
+      if (datas.length === 1) datas.push(datas[0]);
+      [gte, lte] = this.app.verificaData(datas[0], datas[1]);
+    }
     [pagina, limite] = this.app.verificaPagina(pagina, limite);
     const searchParams = {
       ...(busca && {
@@ -55,7 +66,8 @@ export class AgendamentosService {
     [pagina, limite] = this.app.verificaLimite(pagina, limite, total);
     const agendamentos: Agendamento[] = await this.prisma.agendamento.findMany({
       where: searchParams,
-      orderBy: { dataInicio: 'asc' },
+      include: { motivo: true, coordenadoria: true, tecnico: true },
+      orderBy: { dataInicio: 'desc' },
       skip: (pagina - 1) * limite,
       take: limite
     });
@@ -74,12 +86,19 @@ export class AgendamentosService {
     return agendamento;
   }
 
+  async atualizar(id: string, updateAgendamentoDto: Partial<CreateAgendamentoDto>): Promise<Agendamento> {
+    await this.buscarPorId(id);
+    const agendamento = await this.prisma.agendamento.update({ where: { id }, data: updateAgendamentoDto });
+    if (!agendamento) throw new InternalServerErrorException('Não foi possível atualizar o agendamento.');
+    return agendamento;
+  }
+
   async importarICS(arquivo: Express.Multer.File) {
     if (!arquivo) throw new BadRequestException('Nenhum arquivo enviado.');
     const { path } = arquivo;
     const events = Object.values(ical.sync.parseFile(path));
     // loop through events and log them
-    const agendamentos: { resumo: string, dataInicio: Date, dataFim: Date, importado: boolean, legado: boolean, coordenadoriaId: string, motivoId: string }[] = [];
+    const novosAgendamentos: { resumo: string, dataInicio: Date, dataFim: Date, importado: boolean, legado: boolean, coordenadoriaId: string, motivoId: string }[] = [];
     const coordenadorias = await this.prisma.coordenadoria.findMany();
     const coordenadoriasKV = coordenadorias.reduce((acc, cur) => ({ ...acc, [cur.sigla]: cur.id }), {});
     const motivos = await this.prisma.motivo.findMany();
@@ -104,7 +123,13 @@ export class AgendamentosService {
         const resumo = evento.summary;
         const dataInicio = new Date(evento.start);
         const dataFim = new Date(evento.end);
-        agendamentos.push({
+        const repetido = novosAgendamentos.find((agendamento) => {
+          return agendamento.resumo === resumo
+            && agendamento.dataInicio.getTime() === dataInicio.getTime()
+            && agendamento.dataFim.getTime() === dataFim.getTime()
+        });
+        if (repetido || resumo.toLowerCase().includes('cancelado')) continue;
+        novosAgendamentos.push({
           resumo,
           dataInicio,
           dataFim,
@@ -117,145 +142,98 @@ export class AgendamentosService {
     };
     fs.unlink(path, (err) => { if (err) console.log(err) });
     // return agendamentos.length;
-    const result = await this.prisma.agendamento.createMany({ data: agendamentos });
-    const result2 = await this.prisma.$queryRawUnsafe('DELETE FROM agendamentos WHERE id IN(SELECT id FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY resumo, dataInicio, dataFim ORDER BY id) AS number FROM agendamentos) t WHERE number > 1);');
-    console.log({ result, result2 });
-    return result;
-  }
-
-  async buscar(busca: string) {
-    // const agendamentos = await this.prisma.agendamento.findMany();
-    // const coordenadorias = await this.reduceCoordenadorias(agendamentos);
-    // const motivos = await this.reduceMotivos(agendamentos);
-    // return { coordenadorias, motivos };
-    const coordenadorias = await this.prisma.coordenadoria.findMany({
-      select: { sigla: true, agendamentos: true }
-    });
-    const motivos = await this.prisma.motivo.findMany({
-      select: { texto: true, agendamentos: true }
-    });
-    return {
-      coordenadorias: coordenadorias.map((coordenadoria) => {
-        return coordenadoria.agendamentos.length > 0 && {
-          coordenadoria: coordenadoria.sigla,
-          quantidade: coordenadoria.agendamentos.length
-        }
-      }),
-      motivos: motivos.map((motivo) => {
-        return motivo.agendamentos.length > 0 && {
-          motivo: motivo.texto,
-          quantidade: motivo.agendamentos.length
-        }
+    try {
+      const [enviados, duplicados] = await this.prisma.$transaction(async (prisma) => {
+        const enviados = await prisma.agendamento.createMany({ data: novosAgendamentos });
+        const duplicados: { id: string }[] = await prisma.$queryRawUnsafe('SELECT id FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY resumo, dataInicio, dataFim ORDER BY id) AS number FROM agendamentos) t WHERE number > 1;');
+        await prisma.$queryRawUnsafe('DELETE FROM agendamentos WHERE id IN(SELECT id FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY resumo, dataInicio, dataFim ORDER BY id) AS number FROM agendamentos) t WHERE number > 1);');
+        return [enviados.count, duplicados.length || 0];
       })
+      const agendamentos = enviados > duplicados ? enviados - duplicados : 0;
+      return { agendamentos, duplicados };
+    } catch (error) {
+      console.log(error);
+      throw new InternalServerErrorException('Erro ao importar agendamentos.');
     }
   }
 
-  async reduceCoordenadorias(agendamentos: Agendamento[]) {
-    const coordenadorias = await this.prisma.coordenadoria.findMany();
-    const coordenadoriasKV = coordenadorias.reduce((acc, cur) => ({ ...acc, [cur.sigla]: 0 }), {});
-    coordenadoriasKV['Sem Coordenadoria informada e/ou Fora de Padrão'] = 0;
-    agendamentos.map((agendamento) => {
-      for (let i = 0; i < coordenadorias.length; i++) {
-        if (agendamento.resumo.toUpperCase().replace(/[^a-zA-Z]/g, '').includes(coordenadorias[i].sigla.toUpperCase().replace(/[^a-zA-Z]/g, ''))) {
-          coordenadoriasKV[coordenadorias[i].sigla]++;
-          break;
-        }
-        if (i === coordenadorias.length - 1) coordenadoriasKV['Sem Coordenadoria informada e/ou Fora de Padrão']++;
-      }
-    })
-    for (const key in coordenadoriasKV)
-      if (coordenadoriasKV[key] === 0) delete coordenadoriasKV[key];
-    return coordenadoriasKV;
+  async dashboard(
+    motivoId?: string,
+    coordenadoriaId?: string,
+    periodo?: string,
+  ) {
+    let gte: Date, lte: Date;
+    if (periodo && periodo !== '') {
+      const datas = periodo.split(',');
+      if (datas.length === 1) datas.push(datas[0]);
+      [gte, lte] = this.app.verificaData(datas[0], datas[1]);
+    }
+    const agendamentosFiltrados = await this.prisma.agendamento.findMany({
+      where: {
+        dataInicio: { gte, lte },
+        ...(motivoId && motivoId !== 'all' && motivoId !== '' && { motivoId }),
+        ...(coordenadoriaId && coordenadoriaId !== 'all' && coordenadoriaId !== '' && { coordenadoriaId })
+      },
+      include: { motivo: true, coordenadoria: true, tecnico: true },
+    });
+    const coordenadorias = await this.reduceCoordenadorias(agendamentosFiltrados);
+    const motivos = await this.reduceMotivos(agendamentosFiltrados);
+
+    const agendamentos = await this.prisma.agendamento.findMany();
+    const totalAno = agendamentos.filter((agendamento) => agendamento.dataInicio >= new Date(new Date().getFullYear(), 0, 1)).length;
+    const totalMes = agendamentos.filter((agendamento) =>
+      agendamento.dataInicio.getMonth() === new Date().getMonth() &&
+      agendamento.dataInicio.getFullYear() === new Date().getFullYear()
+    ).length;
+    const totalDia = agendamentos.filter((agendamento) =>
+      agendamento.dataInicio.getDate() === new Date().getDate() &&
+      agendamento.dataInicio.getMonth() === new Date().getMonth() &&
+      agendamento.dataInicio.getFullYear() === new Date().getFullYear()
+    ).length;
+
+    const agendamentosMes: { label: string; value: number }[] = [];
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth();
+    const anoAtual = hoje.getFullYear();
+    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    for (let i = 0; i <= mesAtual + 1; i++) {
+      const chamadosMes = agendamentosFiltrados.filter((agendamento) => {
+        const mes = new Date(agendamento.dataInicio).getMonth();
+        const ano = new Date(agendamento.dataInicio).getFullYear();
+        return mes === i && ano === anoAtual;
+      });
+      agendamentosMes.push({ label: `${meses[i]}/${anoAtual}`, value: chamadosMes.length });
+    }
+    return {
+      coordenadorias,
+      motivos,
+      agendamentosMes,
+      total: agendamentosFiltrados.length,
+      totalAno,
+      totalMes,
+      totalDia
+    }
   }
 
+  async reduceCoordenadorias(agendamentos) {
+    const coordenadorias = await this.prisma.coordenadoria.findMany();
+    const coordenadoriasKV = coordenadorias.reduce((acc, cur) => ({ ...acc, [cur.sigla]: 0 }), {});
+    for (const agendamento of agendamentos) {
+      if (agendamento.coordenadoria)
+        coordenadoriasKV[agendamento.coordenadoria.sigla] += 1;
+    }
+    const coordenadoriasArr = [];
+    Object.keys(coordenadoriasKV).map((label) => coordenadoriasKV[label] > 0 && (coordenadoriasArr.push({ label, value: coordenadoriasKV[label] })));
+    return coordenadoriasArr;
+  }
 
-  async reduceMotivos(agendamentos: Agendamento[]) {
+  async reduceMotivos(agendamentos) {
     const motivos = await this.prisma.motivo.findMany();
     const motivosKV = motivos.reduce((acc, cur) => ({ ...acc, [cur.texto]: 0 }), {});
-    motivosKV['Sem Motivo informado e/ou Fora de Padrão'] = 0;
-    agendamentos.map((agendamento) => {
-      for (let i = 0; i < motivos.length; i++) {
-        if (agendamento.resumo.toUpperCase().replace(/[^a-zA-Z]/g, '').includes(motivos[i].texto.toUpperCase().replace(/[^a-zA-Z]/g, ''))) {
-          motivosKV[motivos[i].texto]++;
-          break;
-        }
-        if (i === motivos.length - 1) motivosKV['Sem Motivo informado e/ou Fora de Padrão']++;
-      }
-    })
-    for (const key in motivosKV) {
-      if (motivosKV[key] === 0) delete motivosKV[key];
+    for (const agendamento of agendamentos) {
+      if (agendamento.motivo)
+        motivosKV[agendamento.motivo.texto] += 1;
     }
     return motivosKV;
   }
-  // async importar(arquivo: Express.Multer.File) {
-  //   if (!arquivo) throw new BadRequestException('Nenhum arquivo enviado.');
-  //   const { path } = arquivo;
-  //   const results: Array<{
-  //     municipe: string;
-  //     tecnico: string;
-  //     processo: string;
-  //     coordenadoria_sigla: string;
-  //     dataInicio: Date;
-  //     dataFim: Date;
-  //     motivo_texto: string;
-  //     rg?: string;
-  //     cpf?: string;
-  //   }> = [];
-  //   let isFirstRow = true;
-  //   return new Promise((resolve, reject) => {
-  //     fs.createReadStream(path)
-  //       .pipe(csv({ separator: ';', headers: false }))
-  //       .on('data', async (row) => {
-  //         if (isFirstRow) {
-  //           isFirstRow = false;
-  //           return;
-  //         }
-  //         const dataInicio = parse(row[6], 'dd/MM/yyyy HH:mm:ss', new Date());
-  //         const dataFim = parse(row[7], 'dd/MM/yyyy HH:mm:ss', new Date());
-  //         const record = {
-  //           municipe: row[3].trim(),
-  //           tecnico: row[1].trim(),
-  //           processo: row[5].trim(),
-  //           coordenadoria_sigla: row[4].trim(),
-  //           dataInicio,
-  //           dataFim,
-  //           motivo_texto: row[0].trim(),
-  //           rg: row[2]?.trim() || '',
-  //         };
-  //         results.push(record);
-  //       })
-  //       .on('end', async () => {
-  //         for (const i in results) {
-  //           const achou = await this.prisma.agendamento.findFirst({
-  //             where: { ...results[i] },
-  //           });
-  //           if (achou) results.splice(+i, 1);
-  //         }
-  //         const coordenadorias = await this.prisma.coordenadoria.findMany({ select: { sigla: true, id: true }});
-  //         const motivos = await this.prisma.motivo.findMany({ select: { texto: true, id: true }});
-  //         const coordenadoriasKV = coordenadorias.reduce((acc, cur) => ({ ...acc, [cur.sigla]: cur.id }), {});
-  //         const motivosKV = motivos.reduce((acc, cur) => ({ ...acc, [cur.texto]: cur.id }), {});
-  //         if (results.length > 0) {
-  //           await this.prisma.agendamento.createMany({ data: 
-  //             results.map((agendamento) => ({
-  //               municipe: agendamento.municipe,
-  //               tecnico: agendamento.tecnico,
-  //               processo: agendamento.processo,
-  //               dataInicio: agendamento.dataInicio,
-  //               dataFim: agendamento.dataFim,
-  //               rg: agendamento.rg || null,
-  //               cpf: agendamento.cpf || null,
-  //               motivoId: motivosKV[agendamento.motivo_texto],
-  //               coordenadoriaId: coordenadoriasKV[agendamento.coordenadoria_sigla],
-  //             }))
-  //           });
-  //         }
-  //         fs.unlinkSync(path);
-  //         resolve({
-  //           message: `Foram inseridos ${results.length} novos registros.`,
-  //         });
-  //       })
-  //       .on('error', (error) => reject(error));
-  //   });
-  // }
 }

@@ -16,6 +16,7 @@ export class MotivosService {
     const motivo: Motivo = await this.prisma.motivo.findFirst({ where: { texto }});
     return motivo;
   }
+
   async criar(createMotivoDto: CreateMotivoDto): Promise<Motivo> {
     const { texto } = createMotivoDto;
     if (await this.buscarPorTexto(texto)) throw new BadRequestException('Motivo já cadastrado');
@@ -25,7 +26,7 @@ export class MotivosService {
   }
 
   async listaCompleta(): Promise<Motivo[]> {
-    const motivos: Motivo[] = await this.prisma.motivo.findMany({ orderBy: { texto: 'asc' }});
+    const motivos: Motivo[] = await this.prisma.motivo.findMany({ where: { status: true }, orderBy: { texto: 'asc' }});
     if (!motivos) return [];
     return motivos;
   }
@@ -33,13 +34,17 @@ export class MotivosService {
   async buscarTudo(
     pagina: number = 1,
     limite: number = 10,
+    status?: string,
     busca?: string
   ): Promise<{ total: number, pagina: number, limite: number, data: Motivo[] }> {
     [pagina, limite] = this.app.verificaPagina(pagina, limite);
     const searchParams = {
       ...(busca && { OR: [
         { texto: { contains: busca }},
-      ]})
+      ]}),
+      ...(status && status !== '' && { 
+        status: status === 'ATIVO' ? true : (status === 'INATIVO' ? false : undefined) 
+      }),
     };
     const total: number = await this.prisma.motivo.count({ where: searchParams });
     if (total == 0) return { total: 0, pagina: 0, limite: 0, data: [] };
