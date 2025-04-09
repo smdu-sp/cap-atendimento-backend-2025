@@ -137,6 +137,8 @@ describe('Agendamento.service Testes', () => {
                 tecnicoId: '123e4567-e89b-12d3-a456-426614174003',
                 criadoEm: new Date(),
                 atualizadoEm: new Date(),
+                email: '',
+                status: 'AGENDADO'
             },
             {
                 id: '123e4567-e89b-12d3-a456-426614174012',
@@ -154,6 +156,8 @@ describe('Agendamento.service Testes', () => {
                 tecnicoId: '123e4567-e89b-12d3-a456-426614174008',
                 criadoEm: new Date(),
                 atualizadoEm: new Date(),
+                email: '',
+                status: 'AGENDADO'
             },
             {
                 id: '123e4567-e89b-12d3-a456-426614174013',
@@ -171,6 +175,8 @@ describe('Agendamento.service Testes', () => {
                 tecnicoId: '123e4567-e89b-12d3-a456-426614174011',
                 criadoEm: new Date(),
                 atualizadoEm: new Date(),
+                email: '',
+                status: 'AGENDADO'
             },
         ];
 
@@ -219,6 +225,8 @@ describe('Agendamento.service Testes', () => {
             legado: false,
             criadoEm: new Date(),
             atualizadoEm: new Date(),
+            email: '',
+            status: 'AGENDADO'
         };
 
         const mockFindMotivo: Motivo = {
@@ -240,6 +248,7 @@ describe('Agendamento.service Testes', () => {
         const mockUsuarioFind: Usuario = {
             id: '123e4567-e89b-12d3-a456-426614174012',
             nome: 'Carlos Pereira',
+            nomeSocial: 'lukuzinha',
             login: 'carlos.pereira',
             email: 'carlos.pereira@example.com',
             permissao: 'USR',
@@ -285,6 +294,8 @@ describe('Agendamento.service Testes', () => {
                 tecnicoId: '123e4567-e89b-12d3-a456-426614174003',
                 criadoEm: new Date(),
                 atualizadoEm: new Date(),
+                email: '',
+                status: 'AGENDADO'
             },
             {
                 id: '123e4567-e89b-12d3-a456-426614174012',
@@ -302,6 +313,8 @@ describe('Agendamento.service Testes', () => {
                 tecnicoId: '123e4567-e89b-12d3-a456-426614174008',
                 criadoEm: new Date(),
                 atualizadoEm: new Date(),
+                email: '',
+                status: 'AGENDADO'
             },
             {
                 id: '123e4567-e89b-12d3-a456-426614174013',
@@ -319,6 +332,8 @@ describe('Agendamento.service Testes', () => {
                 tecnicoId: '123e4567-e89b-12d3-a456-426614174011',
                 criadoEm: new Date(),
                 atualizadoEm: new Date(),
+                email: '',
+                status: 'AGENDADO'
             },
         ];
 
@@ -379,6 +394,8 @@ describe('Agendamento.service Testes', () => {
             tecnicoId: '123e4567-e89b-12d3-a456-426614174017',
             criadoEm: new Date(),
             atualizadoEm: new Date(),
+            email: '',
+            status: 'AGENDADO'
         };
 
         (prisma.agendamento.findUnique as jest.Mock).mockResolvedValue(

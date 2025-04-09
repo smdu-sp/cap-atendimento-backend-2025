@@ -94,6 +94,7 @@ describe('Usuarios.service testes unitários', () => {
       {
         id: '1',
         nome: 'João Silva',
+        nomeSocial: 'lukuzinha',
         login: 'joao.silva',
         email: 'joao.silva@example.com',
         status: true,
@@ -106,6 +107,7 @@ describe('Usuarios.service testes unitários', () => {
       {
         id: '2',
         nome: 'Maria Souza',
+        nomeSocial: 'lukuzinha',
         login: 'maria.souza',
         email: 'maria.souza@example.com',
         status: true,
@@ -118,6 +120,7 @@ describe('Usuarios.service testes unitários', () => {
       {
         id: '3',
         nome: 'Carlos Pereira',
+        nomeSocial: 'lukuzinha',
         login: 'carlos.pereira',
         email: 'carlos.pereira@example.com',
         status: false,
@@ -166,6 +169,7 @@ describe('Usuarios.service testes unitários', () => {
     const mockUserLogado: Usuario = {
       id: '3',
       nome: 'Carlos Pereira',
+      nomeSocial: 'lukuzinha',
       login: 'carlos.pereira',
       email: 'carlos.pereira@example.com',
       permissao: $Enums.Permissao.ADM,
@@ -199,6 +203,7 @@ describe('Usuarios.service testes unitários', () => {
       {
         id: '1',
         nome: 'João Silva',
+        nomeSocial: 'lukuzinha',
         login: 'joao.silva',
         email: 'joao.silva@example.com',
         status: true,
@@ -211,6 +216,7 @@ describe('Usuarios.service testes unitários', () => {
       {
         id: '2',
         nome: 'Maria Souza',
+        nomeSocial: 'lukuzinha',
         login: 'maria.souza',
         email: 'maria.souza@example.com',
         status: true,
@@ -223,6 +229,7 @@ describe('Usuarios.service testes unitários', () => {
       {
         id: '3',
         nome: 'Carlos Pereira',
+        nomeSocial: 'lukuzinha',
         login: 'carlos.pereira',
         email: 'carlos.pereira@example.com',
         status: false,
@@ -244,8 +251,8 @@ describe('Usuarios.service testes unitários', () => {
     const mockParams = {
       usuario: null,
       pagina: 1,
-      limite: 10,
-      status: 1,
+      limite: "10",
+      status: "1",
       busca: 'example',
     };
 
@@ -285,7 +292,7 @@ describe('Usuarios.service testes unitários', () => {
         ],
         status: undefined,
       },
-      skip: (mockParams.pagina - 1) * mockParams.limite,
+      skip: (mockParams.pagina - 1) * Number(mockParams.limite),
       take: mockParams.limite,
       orderBy: { nome: 'asc' },
     });
@@ -387,6 +394,7 @@ describe('Usuarios.service testes unitários', () => {
     const mockUserAtualizar: Usuario = {
       id: '3',
       nome: 'Carlos Pereira',
+      nomeSocial: 'lukuzinha',
       login: 'carlos.pereira',
       email: 'carlos.pereira@example.com',
       permissao: $Enums.Permissao.ADM,
@@ -407,6 +415,7 @@ describe('Usuarios.service testes unitários', () => {
     const mockUserAtualizado: Usuario = {
       id: '3',
       nome: 'Carlos Pereira',
+      nomeSocial: 'lukuzinha',
       login: 'carlaopereira',
       email: 'carlos.pereira@example.com',
       permissao: $Enums.Permissao.ADM,

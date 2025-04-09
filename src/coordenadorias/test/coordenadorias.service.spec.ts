@@ -176,8 +176,8 @@ describe('Coordenadorias.service tests', () => {
         expect(prisma.coordenadoria.findMany).toHaveBeenCalledWith({
             where: {
             },
-            skip: (mockParams.pagina - 1) * mockParams.limite,
-            take: mockParams.limite,
+            skip: (mockParams.pagina - 1) * Number(mockParams.limite),
+            take: Number(mockParams.limite),
             orderBy: { sigla: 'asc' },
         })
 
