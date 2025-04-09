@@ -47,8 +47,6 @@ describe('Usuarios.service testes unitários', () => {
   const mockLdapSearch = jest.fn();
   const mockLdapUnbind = jest.fn();
 
-
-
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -91,7 +89,6 @@ describe('Usuarios.service testes unitários', () => {
   });
 
   //listagem de usuarios
-
   it('deverá listar todos os usuários do banco de dados', async () => {
     const mockUsuarios = [
       {
@@ -140,7 +137,6 @@ describe('Usuarios.service testes unitários', () => {
   });
 
   //criação de usuários
-
   it('deverá verificar se um usuário pode ser criado', async () => {
 
     const mockCreateUser: CreateUsuarioDto = {
@@ -198,7 +194,6 @@ describe('Usuarios.service testes unitários', () => {
   });
 
   //buscar todos usuários
-
   it('deverá buscar todos os usuários', async () => {
     const mockUsuarios = [
       {
@@ -300,7 +295,6 @@ describe('Usuarios.service testes unitários', () => {
   });
 
   //buscar usuario por id
-
   it('deverá buscar um usuario pelo id', async () => {
     const mockResponseUser: UsuarioResponseDTO = {
       id: '123456',
@@ -330,7 +324,6 @@ describe('Usuarios.service testes unitários', () => {
   })
 
   //buscar usuario por email
-
   it('deverá buscar um usuario pelo email', async () => {
     const mockResponseUser: UsuarioResponseDTO = {
       id: '123456',
@@ -360,7 +353,6 @@ describe('Usuarios.service testes unitários', () => {
   })
 
   //buscar usuario por login
-
   it('deverá buscar um usuario pelo login', async () => {
     const mockResponseUser: UsuarioResponseDTO = {
       id: '123456',
@@ -390,7 +382,6 @@ describe('Usuarios.service testes unitários', () => {
   })
 
   //atualizar usuario
-
   it('deverá atualizar um usuario', async () => {
 
     const mockUserAtualizar: Usuario = {
@@ -446,7 +437,6 @@ describe('Usuarios.service testes unitários', () => {
   })
 
   //excluir usuario
-
   it('deve excluir um usuário', async () => {
 
     const mockExcUser: UsuarioResponseDTO = {
@@ -481,7 +471,6 @@ describe('Usuarios.service testes unitários', () => {
   })
 
   //autorizar usuario
-
   it('deverá autorizar um usuario', async () => {
 
     const mockAutUser: UsuarioResponseDTO = {
@@ -512,7 +501,6 @@ describe('Usuarios.service testes unitários', () => {
   })
 
   //validar usuario
-
   it('deve validar um usuario', async () => {
     const mockValidUser: UsuarioResponseDTO = {
       id: '123456',
@@ -569,7 +557,6 @@ describe('Usuarios.service testes unitários', () => {
   });
 
   //buscar novo erro
-
   it('deverá lançar erro ao falhar conexão LDAP', async () => {
     mockLdapBind.mockRejectedValue(new Error('Erro de conexão'));
 
@@ -600,7 +587,6 @@ describe('Usuarios.service testes unitários', () => {
   });
 
   //buscar user inativo
-
   it('deverá reativar usuario existente inativo', async () => {
     const mockUsuarioInativo: UsuarioResponseDTO = {
       id: '1',
@@ -635,7 +621,6 @@ describe('Usuarios.service testes unitários', () => {
   });
 
   //reativar user
-
   it('deverá lançar erro ao não encontrar usuário no LDAP', async () => {
     mockLdapBind.mockResolvedValue(undefined);
     mockLdapSearch.mockRejectedValue(new Error('Não encontrado'));
@@ -646,7 +631,6 @@ describe('Usuarios.service testes unitários', () => {
   });
 
   //user não encontrado
-
   it('deverá lançar erro se usuário não encontrado no LDAP', async () => {
     mockLdapBind.mockResolvedValue(undefined);
     mockLdapSearch.mockResolvedValue({ searchEntries: [] });
@@ -655,4 +639,5 @@ describe('Usuarios.service testes unitários', () => {
     await expect(service.buscarNovo('invalidlogin'))
       .rejects.toThrow(InternalServerErrorException);
   });
+
 });
