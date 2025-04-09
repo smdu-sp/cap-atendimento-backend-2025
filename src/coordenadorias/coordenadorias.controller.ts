@@ -23,9 +23,10 @@ export class CoordenadoriasController {
   buscarTudo(
     @Query('pagina')  pagina?: string,
     @Query('limite')  limite?: string,
+    @Query('status')  status?: string,
     @Query('busca')   busca?:  string
   ) {
-    return this.coordenadoriasService.buscarTudo(+pagina, +limite, busca);
+    return this.coordenadoriasService.buscarTudo(+pagina, +limite, status, busca);
   }
 
   @Get('buscar-por-id/:id')

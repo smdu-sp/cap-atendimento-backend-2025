@@ -4,9 +4,11 @@ import { AppModule } from './app.module';
 import { stringify } from 'json-bigint';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { json, urlencoded } from 'express';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(new ValidationPipe());
   app.use((req, res, next) => {
     res.json = (data) => {
       return res.send(stringify(data));
@@ -19,14 +21,15 @@ async function bootstrap() {
   app.enableCors({ origin: 'http://localhost:3001' });
   const options = new DocumentBuilder()
     .addBearerAuth()
-    .setTitle('Outorga Onerosa - Relatórios')
-    .setDescription('Backend em NestJS para aplicação de relatórios de Outorga Onerosa.',)
+    .setTitle('Atendimento ao Público - Agendamentos')
+    .setDescription('Backend em NestJS para aplicação de agendamento de Atendimentos ao Público.',)
     .setVersion('versão 1.0')
     .build();
   const document = SwaggerModule.createDocument(app, options);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('', app, document);
   await app.listen(port);
   console.log("API outorga rodando em http://localhost:" + port);
-  console.log("Documentação rodando em http://localhost:" + port + "/api");
+  console.log("SwaggerUI rodando em http://localhost:" + port + "/api");
+
 }
 bootstrap();

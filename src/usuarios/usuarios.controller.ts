@@ -35,13 +35,13 @@ export class UsuariosController {
   @Permissoes('ADM')
   @Get('buscar-tudo')
   buscarTudo(
-    @UsuarioAtual() usuario: Usuario,
     @Query('pagina') pagina?: string,
     @Query('limite') limite?: string,
+    @Query('busca') busca?: string,
     @Query('status') status?: string,
-    @Query('busca') busca?: string
+    @Query('permissao') permissao?: string,
   ): Promise<UsuarioPaginadoResponseDTO> {
-    return this.usuariosService.buscarTudo(usuario, +pagina, +limite, +status, busca);
+    return this.usuariosService.buscarTudo(+pagina, +limite, busca, status, permissao);
   }
 
   @Permissoes('ADM')
@@ -50,7 +50,7 @@ export class UsuariosController {
     return this.usuariosService.buscarPorId(id);
   }
 
-  @Permissoes('ADM')
+  @Permissoes('ADM', 'TEC', 'USR')
   @Patch('atualizar/:id')
   atualizar(
     @UsuarioAtual() usuario: Usuario,
@@ -64,6 +64,12 @@ export class UsuariosController {
   @Get('lista-completa')
   listaCompleta(): Promise<UsuarioResponseDTO[]> {
     return this.usuariosService.listaCompleta();
+  }
+
+  @Permissoes('ADM')
+  @Get('buscar-tecnicos')
+  buscarTecnicos(): Promise<{ id: string, nome: string }[]> {
+    return this.usuariosService.buscarTecnicos();
   }
 
   @Permissoes('ADM')

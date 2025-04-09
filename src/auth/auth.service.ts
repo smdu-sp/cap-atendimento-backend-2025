@@ -7,12 +7,13 @@ import { UsuarioToken } from './models/UsuarioToken';
 import { UsuarioJwt } from './models/UsuarioJwt';
 import { Client as LdapClient } from 'ldapts';
 
+
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usuariosService: UsuariosService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   async login(usuario: Usuario): Promise<UsuarioToken> {
     const { access_token, refresh_token } = await this.getTokens(usuario);

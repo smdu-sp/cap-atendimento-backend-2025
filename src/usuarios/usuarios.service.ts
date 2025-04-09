@@ -9,7 +9,7 @@ import {
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { $Enums, Usuario } from '@prisma/client';
+import { $Enums, Permissao, Usuario } from '@prisma/client';
 import { AppService } from 'src/app.service';
 import { Client as LdapClient } from 'ldapts';
 import { BuscarNovoResponseDTO, UsuarioAutorizadoResponseDTO, UsuarioPaginadoResponseDTO, UsuarioResponseDTO } from './dto/usuario-response.dto';
@@ -52,6 +52,16 @@ export class UsuariosService {
     return lista;
   }
 
+  async buscarTecnicos(): Promise<{ id: string, nome: string }[]> {
+    const lista: { id: string, nome: string }[] = await this.prisma.usuario.findMany({
+      where: { permissao: 'TEC' },
+      orderBy: { nome: 'asc' },
+      select: { id: true, nome: true },
+    });
+    if (!lista || lista.length == 0) throw new ForbiddenException('Nenhum técnico encontrado.');
+    return lista;
+  }
+
   async criar(
     createUsuarioDto: CreateUsuarioDto,
     usuarioLogado: Usuario
@@ -73,11 +83,11 @@ export class UsuariosService {
   }
 
   async buscarTudo(
-    usuario: Usuario = null,
     pagina: number = 1,
     limite: number = 10,
-    status: number = 1,
-    busca?: string
+    busca?: string,
+    status?: string,
+    permissao?: string
   ): Promise<UsuarioPaginadoResponseDTO> {
     [pagina, limite] = this.app.verificaPagina(pagina, limite);
     const searchParams = {
@@ -87,6 +97,10 @@ export class UsuariosService {
         { login: { contains: busca }},
         { email: { contains: busca }},
       ]}),
+      ...(status && status !== '' && { 
+        status: status === 'ATIVO' ? true : (status === 'INATIVO' ? false : undefined) 
+      }),
+      ...(permissao && permissao !== '' && { permissao: Permissao[permissao] }),
     };
     const total: number = await this.prisma.usuario.count({ where: searchParams });
     if (total == 0) return { total: 0, pagina: 0, limite: 0, data: [] };
@@ -118,6 +132,7 @@ export class UsuariosService {
     return await this.prisma.usuario.findUnique({ where: { login }});
   }
 
+
   async atualizar(
     usuario: Usuario,
     id: string,
@@ -129,6 +144,7 @@ export class UsuariosService {
       if (usuario && usuario.id !== id) throw new ForbiddenException('Login já cadastrado.');
     }
     const usuarioAntes = await this.prisma.usuario.findUnique({ where: { id }});
+    if (['TEC', 'USR'].includes(usuarioAntes.permissao) && id !== usuarioAntes.id) throw new ForbiddenException('Operação não autorizada para este usuário.');
     let { permissao } = updateUsuarioDto;
     permissao = permissao && permissao.toString() !== '' ? this.validaPermissaoCriador(permissao, usuarioLogado.permissao) : usuarioAntes.permissao;
     const usuarioAtualizado: Usuario = await this.prisma.usuario.update({
