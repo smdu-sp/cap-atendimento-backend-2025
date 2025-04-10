@@ -11,8 +11,7 @@ import { CoordenadoriasService } from 'src/coordenadorias/coordenadorias.service
 import { UsuariosService } from 'src/usuarios/usuarios.service';
 import { TestingModule, Test } from '@nestjs/testing';
 import { PrismaService } from 'src/prisma/prisma.service';
-import fs from 'fs'
-import ical from 'node-ical'
+
 
 describe('Agendamento.service Testes', () => {
     let service: AgendamentosService;

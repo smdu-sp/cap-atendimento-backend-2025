@@ -8,7 +8,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { $Enums, Usuario } from '@prisma/client';
 import { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
-import { InternalServerErrorException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  InternalServerErrorException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Client as LdapClient } from 'ldapts';
 
 describe('Usuarios.service testes unitários', () => {
@@ -24,7 +28,7 @@ describe('Usuarios.service testes unitários', () => {
       delete: jest.fn(),
       findMany: jest.fn(),
       findUnique: jest.fn(),
-      count: jest.fn()
+      count: jest.fn(),
     },
   };
 
@@ -40,8 +44,8 @@ describe('Usuarios.service testes unitários', () => {
   const mockLdapService = {
     bind: jest.fn(),
     search: jest.fn(),
-    unbind: jest.fn()
-  }
+    unbind: jest.fn(),
+  };
 
   const mockLdapBind = jest.fn();
   const mockLdapSearch = jest.fn();
@@ -55,8 +59,12 @@ describe('Usuarios.service testes unitários', () => {
     mockLdapUnbind.mockReset();
 
     jest.spyOn(LdapClient.prototype, 'bind').mockImplementation(mockLdapBind);
-    jest.spyOn(LdapClient.prototype, 'search').mockImplementation(mockLdapSearch);
-    jest.spyOn(LdapClient.prototype, 'unbind').mockImplementation(mockLdapUnbind);
+    jest
+      .spyOn(LdapClient.prototype, 'search')
+      .mockImplementation(mockLdapSearch);
+    jest
+      .spyOn(LdapClient.prototype, 'unbind')
+      .mockImplementation(mockLdapUnbind);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -141,7 +149,6 @@ describe('Usuarios.service testes unitários', () => {
 
   //criação de usuários
   it('deverá verificar se um usuário pode ser criado', async () => {
-
     const mockCreateUser: CreateUsuarioDto = {
       nome: 'Carlos Pereira',
       nomeSocial: 'Carlão',
@@ -182,19 +189,21 @@ describe('Usuarios.service testes unitários', () => {
 
     jest.spyOn(service, 'buscarPorEmail').mockResolvedValue(null);
     jest.spyOn(service, 'buscarPorLogin').mockResolvedValue(null);
-    jest.spyOn(service, 'validaPermissaoCriador').mockReturnValue($Enums.Permissao.DEV);
+    jest
+      .spyOn(service, 'validaPermissaoCriador')
+      .mockReturnValue($Enums.Permissao.DEV);
 
     (prisma.usuario.create as jest.Mock).mockResolvedValue(mockResponseUser);
 
-    const result = await service.criar(mockCreateUser, mockUserLogado)
+    const result = await service.criar(mockCreateUser, mockUserLogado);
 
-    expect(result).not.toBeNull()
-    expect(result).toEqual(mockResponseUser)
-    expect(service.buscarPorEmail).toHaveBeenCalledWith(mockCreateUser.email)
-    expect(service.buscarPorLogin).toHaveBeenCalledWith(mockCreateUser.login)
+    expect(result).not.toBeNull();
+    expect(result).toEqual(mockResponseUser);
+    expect(service.buscarPorEmail).toHaveBeenCalledWith(mockCreateUser.email);
+    expect(service.buscarPorLogin).toHaveBeenCalledWith(mockCreateUser.login);
     expect(prisma.usuario.create).toHaveBeenCalledWith({
-      data: mockCreateUser
-    })
+      data: mockCreateUser,
+    });
   });
 
   //buscar todos usuários
@@ -251,8 +260,8 @@ describe('Usuarios.service testes unitários', () => {
     const mockParams = {
       usuario: null,
       pagina: 1,
-      limite: "10",
-      status: "1",
+      limite: 10, // Alterado de string para número
+      status: '1',
       busca: 'example',
     };
 
@@ -261,11 +270,10 @@ describe('Usuarios.service testes unitários', () => {
     (prisma.usuario.findMany as jest.Mock).mockResolvedValue(mockUsuarios);
 
     const result = await service.buscarTudo(
-      mockParams.usuario,
       mockParams.pagina,
       mockParams.limite,
-      mockParams.status,
       mockParams.busca,
+      mockParams.status,
     );
 
     expect(result).not.toBeNull();
@@ -292,15 +300,11 @@ describe('Usuarios.service testes unitários', () => {
         ],
         status: undefined,
       },
-      skip: (mockParams.pagina - 1) * Number(mockParams.limite),
+      skip: (mockParams.pagina - 1) * mockParams.limite,
       take: mockParams.limite,
       orderBy: { nome: 'asc' },
     });
-
-
-
   });
-
   //buscar usuario por id
   it('deverá buscar um usuario pelo id', async () => {
     const mockResponseUser: UsuarioResponseDTO = {
@@ -314,21 +318,23 @@ describe('Usuarios.service testes unitários', () => {
       permissao: $Enums.Permissao.ADM,
       ultimoLogin: new Date('2025-03-25T12:00:00Z'),
       criadoEm: new Date('2023-01-01T00:00:00Z'),
-      atualizadoEm: new Date('2025-03-25T12:00:00Z')
+      atualizadoEm: new Date('2025-03-25T12:00:00Z'),
     };
 
-    (prisma.usuario.findUnique as jest.Mock).mockResolvedValue(mockResponseUser)
+    (prisma.usuario.findUnique as jest.Mock).mockResolvedValue(
+      mockResponseUser,
+    );
 
-    const result = await service.buscarPorId('123456')
+    const result = await service.buscarPorId('123456');
 
-    expect(result).not.toBe(null)
-    expect(result).toEqual(mockResponseUser)
+    expect(result).not.toBe(null);
+    expect(result).toEqual(mockResponseUser);
     expect(prisma.usuario.findUnique).toHaveBeenCalledWith({
       where: {
-        id: '123456'
-      }
-    })
-  })
+        id: '123456',
+      },
+    });
+  });
 
   //buscar usuario por email
   it('deverá buscar um usuario pelo email', async () => {
@@ -343,21 +349,23 @@ describe('Usuarios.service testes unitários', () => {
       permissao: $Enums.Permissao.ADM,
       ultimoLogin: new Date('2025-03-25T12:00:00Z'),
       criadoEm: new Date('2023-01-01T00:00:00Z'),
-      atualizadoEm: new Date('2025-03-25T12:00:00Z')
+      atualizadoEm: new Date('2025-03-25T12:00:00Z'),
     };
 
-    (prisma.usuario.findUnique as jest.Mock).mockResolvedValue(mockResponseUser)
+    (prisma.usuario.findUnique as jest.Mock).mockResolvedValue(
+      mockResponseUser,
+    );
 
-    const result = await service.buscarPorEmail('joao.silva@example.com')
+    const result = await service.buscarPorEmail('joao.silva@example.com');
 
-    expect(result).not.toBe(null)
-    expect(result).toEqual(mockResponseUser)
+    expect(result).not.toBe(null);
+    expect(result).toEqual(mockResponseUser);
     expect(prisma.usuario.findUnique).toHaveBeenCalledWith({
       where: {
-        email: 'joao.silva@example.com'
-      }
-    })
-  })
+        email: 'joao.silva@example.com',
+      },
+    });
+  });
 
   //buscar usuario por login
   it('deverá buscar um usuario pelo login', async () => {
@@ -372,25 +380,26 @@ describe('Usuarios.service testes unitários', () => {
       permissao: $Enums.Permissao.ADM,
       ultimoLogin: new Date('2025-03-25T12:00:00Z'),
       criadoEm: new Date('2023-01-01T00:00:00Z'),
-      atualizadoEm: new Date('2025-03-25T12:00:00Z')
+      atualizadoEm: new Date('2025-03-25T12:00:00Z'),
     };
 
-    (prisma.usuario.findUnique as jest.Mock).mockResolvedValue(mockResponseUser)
+    (prisma.usuario.findUnique as jest.Mock).mockResolvedValue(
+      mockResponseUser,
+    );
 
-    const result = await service.buscarPorLogin('joao.silva')
+    const result = await service.buscarPorLogin('joao.silva');
 
-    expect(result).not.toBe(null)
-    expect(result).toEqual(mockResponseUser)
+    expect(result).not.toBe(null);
+    expect(result).toEqual(mockResponseUser);
     expect(prisma.usuario.findUnique).toHaveBeenCalledWith({
       where: {
-        login: 'joao.silva'
-      }
-    })
-  })
+        login: 'joao.silva',
+      },
+    });
+  });
 
   //atualizar usuario
   it('deverá atualizar um usuario', async () => {
-
     const mockUserAtualizar: Usuario = {
       id: '3',
       nome: 'Carlos Pereira',
@@ -405,12 +414,11 @@ describe('Usuarios.service testes unitários', () => {
       atualizadoEm: new Date('2025-03-24T12:00:00Z'),
     };
 
-
     const updateParams: UpdateUsuarioDto = {
       login: 'carlaoperereira',
       avatar: 'avatar5.png',
-      permissao: mockUserAtualizar.permissao
-    }
+      permissao: mockUserAtualizar.permissao,
+    };
 
     const mockUserAtualizado: Usuario = {
       id: '3',
@@ -428,26 +436,33 @@ describe('Usuarios.service testes unitários', () => {
 
     jest.spyOn(service, 'buscarPorId').mockResolvedValue(mockUserAtualizar);
     jest.spyOn(service, 'buscarPorLogin').mockResolvedValue(null);
-    (prisma.usuario.findUnique as jest.Mock).mockResolvedValue(mockUserAtualizar);
-    jest.spyOn(service, 'validaPermissaoCriador').mockReturnValue(mockUserAtualizar.permissao);
+    (prisma.usuario.findUnique as jest.Mock).mockResolvedValue(
+      mockUserAtualizar,
+    );
+    jest
+      .spyOn(service, 'validaPermissaoCriador')
+      .mockReturnValue(mockUserAtualizar.permissao);
     (prisma.usuario.update as jest.Mock).mockResolvedValue(mockUserAtualizado);
 
-    const result = await service.atualizar(mockUserAtualizar, mockUserAtualizar.id, updateParams);
+    const result = await service.atualizar(
+      mockUserAtualizar,
+      mockUserAtualizar.id,
+      updateParams,
+    );
 
-    expect(result).not.toBe(null)
-    expect(result).toEqual(mockUserAtualizado)
+    expect(result).not.toBe(null);
+    expect(result).toEqual(mockUserAtualizado);
 
     expect(prisma.usuario.update).toHaveBeenCalledWith({
       where: {
         id: expect.any(String),
       },
-      data: updateParams
-    })
-  })
+      data: updateParams,
+    });
+  });
 
   //excluir usuario
   it('deve excluir um usuário', async () => {
-
     const mockExcUser: UsuarioResponseDTO = {
       id: '123456',
       nome: 'João da Silva',
@@ -459,29 +474,28 @@ describe('Usuarios.service testes unitários', () => {
       permissao: $Enums.Permissao.ADM,
       ultimoLogin: new Date('2025-03-25T12:00:00Z'),
       criadoEm: new Date('2023-01-01T00:00:00Z'),
-      atualizadoEm: new Date('2025-03-25T12:00:00Z')
+      atualizadoEm: new Date('2025-03-25T12:00:00Z'),
     };
 
-    (prisma.usuario.update as jest.Mock).mockResolvedValue({ desativado: true })
+    (prisma.usuario.update as jest.Mock).mockResolvedValue({
+      desativado: true,
+    });
 
-    const result = await service.excluir(mockExcUser.id)
+    const result = await service.excluir(mockExcUser.id);
 
-    expect(result).not.toBe(null)
-    expect(result).toEqual({ desativado: true })
+    expect(result).not.toBe(null);
+    expect(result).toEqual({ desativado: true });
 
     expect(prisma.usuario.update).toHaveBeenCalledWith({
       where: {
-        id: expect.any(String)
+        id: expect.any(String),
       },
       data: { status: false },
-    })
-
-
-  })
+    });
+  });
 
   //autorizar usuario
   it('deverá autorizar um usuario', async () => {
-
     const mockAutUser: UsuarioResponseDTO = {
       id: '123456',
       nome: 'João da Silva',
@@ -493,21 +507,20 @@ describe('Usuarios.service testes unitários', () => {
       permissao: $Enums.Permissao.ADM,
       ultimoLogin: new Date('2025-03-25T12:00:00Z'),
       criadoEm: new Date('2023-01-01T00:00:00Z'),
-      atualizadoEm: new Date('2025-03-25T12:00:00Z')
+      atualizadoEm: new Date('2025-03-25T12:00:00Z'),
     };
 
-    (prisma.usuario.update as jest.Mock).mockResolvedValue(mockAutUser)
+    (prisma.usuario.update as jest.Mock).mockResolvedValue(mockAutUser);
 
-    const result = await service.autorizaUsuario(mockAutUser.id)
+    const result = await service.autorizaUsuario(mockAutUser.id);
 
-    expect(result).not.toBe(null)
-    expect(result).toEqual({ autorizado: true })
+    expect(result).not.toBe(null);
+    expect(result).toEqual({ autorizado: true });
     expect(prisma.usuario.update).toHaveBeenCalledWith({
       where: { id: mockAutUser.id },
       data: { status: true },
-    })
-
-  })
+    });
+  });
 
   //validar usuario
   it('deve validar um usuario', async () => {
@@ -522,30 +535,32 @@ describe('Usuarios.service testes unitários', () => {
       permissao: $Enums.Permissao.ADM,
       ultimoLogin: new Date('2025-03-25T12:00:00Z'),
       criadoEm: new Date('2023-01-01T00:00:00Z'),
-      atualizadoEm: new Date('2025-03-25T12:00:00Z')
+      atualizadoEm: new Date('2025-03-25T12:00:00Z'),
     };
 
     (prisma.usuario.findUnique as jest.Mock).mockResolvedValue(mockValidUser);
 
-    const result = await service.validaUsuario(mockValidUser.id)
+    const result = await service.validaUsuario(mockValidUser.id);
 
-    expect(result).not.toBe(null)
-    expect(result).toEqual(mockValidUser)
+    expect(result).not.toBe(null);
+    expect(result).toEqual(mockValidUser);
     expect(prisma.usuario.findUnique).toHaveBeenCalledWith({
       where: {
-        id: expect.any(String)
-      }
-    })
-  })
+        id: expect.any(String),
+      },
+    });
+  });
 
   //buscar por nome
   it('deverá buscar um usuario pelo nome', async () => {
     const mockLdapResponse = {
-      searchEntries: [{
-        name: 'João Silva',
-        mail: 'joao.silva@example.com',
-        samaccountname: 'joao.silva'
-      }]
+      searchEntries: [
+        {
+          name: 'João Silva',
+          mail: 'joao.silva@example.com',
+          samaccountname: 'joao.silva',
+        },
+      ],
     };
 
     mockLdapBind.mockResolvedValue(undefined);
@@ -556,12 +571,12 @@ describe('Usuarios.service testes unitários', () => {
     expect(result).toEqual({
       nome: 'João Silva',
       email: 'joao.silva@example.com',
-      login: 'joao.silva'
+      login: 'joao.silva',
     });
 
     expect(mockLdapBind).toHaveBeenCalledWith(
       `${process.env.USER_LDAP}${process.env.LDAP_DOMAIN}`,
-      process.env.PASS_LDAP
+      process.env.PASS_LDAP,
     );
   });
 
@@ -569,17 +584,20 @@ describe('Usuarios.service testes unitários', () => {
   it('deverá lançar erro ao falhar conexão LDAP', async () => {
     mockLdapBind.mockRejectedValue(new Error('Erro de conexão'));
 
-    await expect(service.buscarPorNome('Nome Inválido'))
-      .rejects.toThrow(InternalServerErrorException);
+    await expect(service.buscarPorNome('Nome Inválido')).rejects.toThrow(
+      InternalServerErrorException,
+    );
   });
 
   //buscar novo
   it('deverá buscar um novo usuario via LDAP', async () => {
     const mockLdapResponse = {
-      searchEntries: [{
-        name: 'Novo Usuário',
-        mail: 'novo@example.com'
-      }]
+      searchEntries: [
+        {
+          name: 'Novo Usuário',
+          mail: 'novo@example.com',
+        },
+      ],
     };
 
     mockLdapBind.mockResolvedValue(undefined);
@@ -591,7 +609,7 @@ describe('Usuarios.service testes unitários', () => {
     expect(result).toEqual({
       login: 'novousuario',
       nome: 'Novo Usuário',
-      email: 'novo@example.com'
+      email: 'novo@example.com',
     });
   });
 
@@ -608,7 +626,7 @@ describe('Usuarios.service testes unitários', () => {
       ultimoLogin: new Date('2024-01-01'),
       criadoEm: new Date('2024-01-01'),
       atualizadoEm: new Date('2024-01-01'),
-      nomeSocial: undefined
+      nomeSocial: undefined,
     };
 
     jest.spyOn(service, 'buscarPorLogin').mockResolvedValue(mockUsuarioInativo);
@@ -620,13 +638,15 @@ describe('Usuarios.service testes unitários', () => {
 
     expect(prisma.usuario.update).toHaveBeenCalledWith({
       where: { id: '1' },
-      data: { status: true }
+      data: { status: true },
     });
 
-    expect(result).toEqual(expect.objectContaining({
-      login: 'usuarioexistente',
-      status: true
-    }));
+    expect(result).toEqual(
+      expect.objectContaining({
+        login: 'usuarioexistente',
+        status: true,
+      }),
+    );
   });
 
   //reativar user
@@ -635,8 +655,9 @@ describe('Usuarios.service testes unitários', () => {
     mockLdapSearch.mockRejectedValue(new Error('Não encontrado'));
     jest.spyOn(service, 'buscarPorLogin').mockResolvedValue(null);
 
-    await expect(service.buscarNovo('inexistente'))
-      .rejects.toThrow(InternalServerErrorException);
+    await expect(service.buscarNovo('inexistente')).rejects.toThrow(
+      InternalServerErrorException,
+    );
   });
 
   //user não encontrado
@@ -645,8 +666,8 @@ describe('Usuarios.service testes unitários', () => {
     mockLdapSearch.mockResolvedValue({ searchEntries: [] });
     jest.spyOn(service, 'buscarPorLogin').mockResolvedValue(null);
 
-    await expect(service.buscarNovo('invalidlogin'))
-      .rejects.toThrow(InternalServerErrorException);
+    await expect(service.buscarNovo('invalidlogin')).rejects.toThrow(
+      InternalServerErrorException,
+    );
   });
-
 });

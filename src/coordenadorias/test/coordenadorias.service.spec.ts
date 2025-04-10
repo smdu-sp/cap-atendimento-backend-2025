@@ -145,45 +145,47 @@ describe('Coordenadorias.service tests', () => {
                 atualizadoEm: new Date(),
             },
         ];
-
+    
         const mockPaginacao = {
             total: 3,
             pagina: 1,
             limite: 10,
             data: mockListCoordenadorias
         };
-
+    
         const mockParams = {
             pagina: 1,
             limite: 10,
             busca: null,
         };
-
+    
         (prisma.coordenadoria.count as jest.Mock).mockResolvedValue(3);
         jest.spyOn(app, 'verificaPagina').mockReturnValue([1, 10]);
         (prisma.coordenadoria.findMany as jest.Mock).mockResolvedValue(mockListCoordenadorias);
-
+    
         const result = await service.buscarTudo(
             mockParams.pagina,
             mockParams.limite
         )
-
+    
         expect(result).not.toBe(null)
         expect(result.data).toEqual(mockListCoordenadorias)
         expect(prisma.coordenadoria.count).toHaveBeenCalledWith({
             where: {}
         })
         expect(prisma.coordenadoria.findMany).toHaveBeenCalledWith({
-            where: {
-            },
+            where: {},
             skip: (mockParams.pagina - 1) * Number(mockParams.limite),
             take: Number(mockParams.limite),
             orderBy: { sigla: 'asc' },
+            include: {
+                agendamentos: {
+                    select: { id: true }
+                }
+            }
         })
-
-
     })
-
+    
     it('deverá buscar por ID', async () => {
         const mockFindCoordenadoria: Coordenadoria = {
             id: '123e4567-e89b-12d3-a456-426614174003',
